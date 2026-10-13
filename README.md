@@ -1,14 +1,29 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.25**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.27**.
 
 ## Instalación y actualizaciones
 
 Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js) desde su enlace directo en Tampermonkey (PC) o mediante **Importar desde enlace** en Stay (iPhone). Mantén una sola copia activa y recarga WPlace. Puedes respaldar tus plantillas como `.oki` antes de reemplazar una instalación anterior.
 
-Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso de actualización. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
+Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.25 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.## Nota de actualizaciones
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.27 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+
+## Nota de actualizaciones
+
+### Plus.27
+
+- Aplica los colores del tema actual de WPlace a los paneles principales, menús de imagen, guía, avisos y botones del macro.
+- Usa paneles y botones redondeados con el diseño normal; adopta esquinas cuadradas y sombras sólidas con la interfaz pixelada.
+- Conserva la galería de canvas y los modos de pintado individuales añadidos en Plus.26.
+
+### Plus.26
+
+- Al minimizar, los tres controles se alinean con la barra derecha de WPlace, incluso después de mover el panel o cambiar el tamaño de la pantalla.
+- El panel de canvas presenta las plantillas como galería con nombre, resolución, avance y búsqueda.
+- Al seleccionar una plantilla se abre su vista detallada con modo de pintado, opacidad y opciones propias. Cada plantilla conserva su modo de forma independiente.
+- Mantiene el diseño adaptable a los temas claro, oscuro y pixelado en PC y móvil.
 
 ### Plus.25
 
@@ -17,25 +32,19 @@ El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplic
 - El estilo normal conserva bordes redondeados; el estilo pixelado toma bordes cuadrados y sombras sólidas.
 - El panel ampliado se mantiene dentro de la pantalla al abrirlo desde el borde en móvil.
 
-
-
 ### Plus.24
 
-- Inicia con una barra reducida inspirada en los controles de WPlace.
+- Inicia con una barra reducida inspirada en los controles de WPlace. Conserva ampliar, dibujar, AutoDraw, configuración y canvas.
 - Une cabecera y acciones en un panel flotante; el panel de canvas se mueve y oculta por separado. Ambos se ajustan al borde al soltarlos.
-- Presenta las alertas y nuevas versiones como notificaciones de estilo WPlace.
-- Importa `.wplace` con su posición geográfica, tamaño y opacidad originales; corrige un redondeo que podía quitar una fila de píxeles.
+- Presenta las alertas y nuevas versiones como notificaciones de estilo WPlace, sin cubrir toda la pantalla.
+- Importa `.wplace` con su posición geográfica, tamaño y opacidad originales. Corrige un redondeo que podía quitar una fila de píxeles.
 - Evita montar una segunda interfaz durante la misma carga de página.
-
-
 
 ### Plus.23
 
-- Elimina el fondo estrellado y la superficie de altura completa: los paneles flotan sobre el mapa.
-- El canvas inicia oculto y se abre con «Mostrar canvas» desde el panel principal.
-- Reduce el tamaño del script al retirar la imagen de fondo incrustada.
-
-
+- Retira el fondo estrellado y la superficie que cubría toda la altura de la pantalla. Los controles quedan como paneles flotantes sobre el mapa.
+- El panel de canvas empieza oculto y se abre desde «Mostrar canvas» en el panel principal. Se conserva el control para volver a ocultarlo.
+- Reduce el tamaño del archivo al retirar la imagen de fondo incrustada. Comprueba la vista en PC y móvil simulados.
 
 ### Plus.22
 
