@@ -1,6 +1,6 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.24**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.25**.
 
 ## Instalación y actualizaciones
 
@@ -8,9 +8,16 @@ Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShar
 
 Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso de actualización. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.24 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.25 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.## Nota de actualizaciones
 
-## Nota de actualizaciones
+### Plus.25
+
+- La vista minimizada muestra tres controles verticales junto a la barra lateral de WPlace: abrir panel, Dibujar y activar/detener AutoDraw.
+- El tema claro u oscuro usa los colores actuales de WPlace y responde a los cambios sin recargar.
+- El estilo normal conserva bordes redondeados; el estilo pixelado toma bordes cuadrados y sombras sólidas.
+- El panel ampliado se mantiene dentro de la pantalla al abrirlo desde el borde en móvil.
+
+
 
 ### Plus.24
 
