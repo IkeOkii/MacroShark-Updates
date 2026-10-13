@@ -1,14 +1,26 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.23**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.24**.
 
 ## Instalación y actualizaciones
 
 Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js) desde su enlace directo en Tampermonkey (PC) o mediante **Importar desde enlace** en Stay (iPhone). Mantén una sola copia activa y recarga WPlace. Puedes respaldar tus plantillas como `.oki` antes de reemplazar una instalación anterior.
 
-Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
+Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso de actualización. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.22 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.## Nota de actualizaciones
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.24 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+
+## Nota de actualizaciones
+
+### Plus.24
+
+- Inicia con una barra reducida inspirada en los controles de WPlace.
+- Une cabecera y acciones en un panel flotante; el panel de canvas se mueve y oculta por separado. Ambos se ajustan al borde al soltarlos.
+- Presenta las alertas y nuevas versiones como notificaciones de estilo WPlace.
+- Importa `.wplace` con su posición geográfica, tamaño y opacidad originales; corrige un redondeo que podía quitar una fila de píxeles.
+- Evita montar una segunda interfaz durante la misma carga de página.
+
+
 
 ### Plus.23
 
