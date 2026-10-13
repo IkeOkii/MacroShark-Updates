@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.25
+// @version      Plus.26
 // @description  Macro local para PC y móvil con controles táctiles y filtro de colores disponibles
 // @author       Ike
 // @license      MPL-2.0
@@ -1536,10 +1536,13 @@ class S extends ao {
   skipUnavailableColors;
   colors;
   lock;
+  displayName;
   static PREVIEW_MASK_BASE_WIDTH = 96;
   static PREVIEW_MASK_BASE_HEIGHT = 96;
   static async fromJSON(o, a) {
-    return new S(o, J.fromJSON(o, a.position), await q.fromJSON(o, a.pixels), a.strategy, a.opacity, a.drawTransparentPixels, a.drawColorsInOrder, a.skipUnavailableColors, a.colors, a.lock);
+    const image = new S(o, J.fromJSON(o, a.position), await q.fromJSON(o, a.pixels), a.strategy, a.opacity, a.drawTransparentPixels, a.drawColorsInOrder, a.skipUnavailableColors, a.colors, a.lock);
+    image.displayName = typeof a.displayName === 'string' ? a.displayName : '';
+    return image;
   }
   element = document.createElement("div");
   tasks = [];
@@ -1756,7 +1759,8 @@ class S extends ao {
       drawColorsInOrder: this.drawColorsInOrder,
       skipUnavailableColors: this.skipUnavailableColors,
       colors: this.colors,
-      lock: this.lock
+      lock: this.lock,
+      displayName: this.displayName || ''
     };
   }
   updateTasks() {
@@ -5000,6 +5004,46 @@ html[data-game-ui] .wwidget,html[data-game-ui] .wwidget button,html[data-game-ui
 html[data-game-ui] .wwidget.wopen,html[data-game-ui] .wwidget.wopen>.title,html[data-game-ui] .wwidget.wopen .widget-section,html[data-game-ui] .wwidget.wopen .widget-section-summary,html[data-game-ui] .wwidget.wopen .widget-section-images,html[data-game-ui] .wwidget.wopen button,html[data-game-ui] .wwidget.wopen input,html[data-game-ui] .wwidget.wopen select{border-radius:2px}
 html[data-game-ui] .wwidget.wopen{box-shadow:4px 4px 0 color-mix(in srgb,var(--shark-ink) 40%,transparent)}
 html[data-game-ui] .wwidget:not(.wopen) .shark-mini-grid>button{border-width:2px;border-radius:2px;box-shadow:3px 3px 0 color-mix(in srgb,var(--shark-ink) 38%,transparent)}
+
+/* Plus.26: canvas gallery and independent settings for every image. */
+.wwidget .widget-section-images{position:fixed;z-index:1002;box-sizing:border-box;width:min(940px,calc(100vw - 16px))!important;max-height:min(82dvh,760px)!important;min-height:min(460px,calc(100dvh - 16px));padding:0!important;overflow-y:auto;border:2px solid var(--shark-line);border-radius:8px;background:var(--shark-raised);color:var(--shark-ink)}
+.wwidget .widget-section-images>.widget-section-summary{position:sticky;top:0;z-index:2;box-sizing:border-box;min-height:62px;margin:0;padding:12px 16px;border-bottom:1px solid var(--shark-line);border-radius:0;background:var(--shark-control);color:var(--shark-ink)}
+.wwidget .widget-section-images .widget-section-title{font-size:15px;color:var(--shark-ink)}
+.wwidget .shark-gallery-count{font-size:11px;opacity:.75;margin-right:auto}
+.wwidget .widget-section-images>.widget-image-actions{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:8px;padding:12px 16px;border-bottom:1px solid var(--shark-line)}
+.wwidget .shark-gallery-search{box-sizing:border-box;width:100%;min-width:0;padding:10px 12px;border:1px solid var(--shark-line);border-radius:5px;background:var(--shark-surface);color:var(--shark-ink)}
+.wwidget .widget-section-images .macroshark-inline-file{grid-column:auto;min-height:42px;border-radius:5px;background:var(--shark-accent);color:var(--color-primary-content,#fff)}
+.wwidget .widget-section-images .images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;max-height:none;padding:16px;box-sizing:border-box;overflow:visible}
+.wwidget .images .shark-gallery-card{position:relative;display:flex;flex-direction:column;gap:7px;min-width:0;min-height:220px;padding:10px;border:1px solid var(--shark-line);border-radius:5px;background:var(--shark-surface);color:var(--shark-ink);box-shadow:3px 3px 0 color-mix(in srgb,var(--shark-ink) 15%,transparent)}
+.wwidget .images .shark-gallery-card[hidden]{display:none!important}
+.wwidget .images .shark-gallery-card .preview{min-height:118px;max-height:150px;overflow:hidden;border:0;border-radius:2px;background:repeating-conic-gradient(var(--shark-control) 0% 25%,var(--shark-raised) 0% 50%) 50% / 16px 16px}
+.wwidget .images .shark-gallery-card .preview img{max-height:138px;max-width:100%;border-radius:0;image-rendering:pixelated}
+.wwidget .shark-card-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;font-size:13px}
+.wwidget .shark-card-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wwidget .shark-card-size{flex:none;font-size:10px;opacity:.7}
+.wwidget .shark-gallery-card .image-progress{margin-top:auto}
+.wwidget .shark-gallery-card .image-progress-label{text-align:left;color:var(--shark-ink)}
+.wwidget .shark-gallery-card .shark-detail-back,.wwidget .shark-gallery-card .shark-image-settings,.wwidget .shark-gallery-card .image-controls{display:none}
+.wwidget .images .shark-gallery-card:not(.shark-detail-active) .image-controls{display:none!important}
+.wwidget .images.shark-detail-mode{display:block}
+.wwidget .images.shark-detail-mode>.shark-gallery-card:not(.shark-detail-active){display:none}
+.wwidget .images .shark-gallery-card.shark-detail-active{display:grid;grid-template-columns:minmax(180px,32%) minmax(0,1fr);grid-template-rows:auto auto auto 1fr auto;gap:12px;min-height:400px;padding:16px}
+.wwidget .shark-detail-active .shark-detail-back{display:block;grid-column:1/-1;justify-self:start;width:auto;min-height:36px}
+.wwidget .shark-detail-active .preview{grid-column:1;grid-row:2/6;align-self:stretch;max-height:none;min-height:260px}
+.wwidget .shark-detail-active .preview img{max-height:280px}
+.wwidget .shark-detail-active .shark-card-heading{grid-column:2;grid-row:2;font-size:18px}
+.wwidget .shark-detail-active .image-progress{grid-column:2;grid-row:3;margin:0}
+.wwidget .shark-detail-active .shark-image-settings{display:grid;grid-column:2;grid-row:4;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-content:start}
+.wwidget .shark-image-settings label{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:8px;border:1px solid var(--shark-line);border-radius:4px;background:var(--shark-control)!important;color:var(--shark-ink)!important;font-size:12px}
+.wwidget .shark-image-settings label:first-child,.wwidget .shark-image-settings label:nth-child(2){grid-column:1/-1}
+.wwidget .shark-image-settings select,.wwidget .shark-image-settings input[type=range]{width:100%;min-width:0}
+.wwidget .shark-image-settings input[type=checkbox]{accent-color:var(--shark-accent)}
+.wwidget .shark-detail-active .image-controls{display:grid;grid-column:2;grid-row:5;grid-template-columns:repeat(8,minmax(0,1fr))}
+.wwidget .shark-detail-active .image-controls button{min-width:0;height:36px}
+.wwidget .widget-section-images:has(.shark-detail-mode)>.widget-image-actions{display:none}
+@media(max-width:700px){.wwidget .widget-section-images{max-height:calc(100dvh - 16px)!important;min-height:0}.wwidget .widget-section-images .images{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:minmax(0,1fr) 130px;padding:8px}.wwidget .widget-section-images .shark-gallery-count,.wwidget .widget-section-images .images-collapse-state{display:none}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:nowrap;gap:5px;padding:8px}.wwidget .widget-section-images .shark-overlay-compact span,.wwidget .widget-section-images .macroshark-reference-toggle span{display:none}.wwidget .widget-section-images .macroshark-reference-toggle{width:30px;min-width:30px;padding:0!important}.wwidget .widget-section-images .macroshark-reference-toggle::before{content:'◫';font-size:16px}.wwidget .images .shark-gallery-card.shark-detail-active{grid-template-columns:1fr;grid-template-rows:auto auto auto auto auto auto}.wwidget .shark-detail-active .shark-detail-back,.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .shark-card-heading,.wwidget .shark-detail-active .image-progress,.wwidget .shark-detail-active .shark-image-settings,.wwidget .shark-detail-active .image-controls{grid-column:1;grid-row:auto}.wwidget .shark-detail-active .preview{min-height:180px}.wwidget .shark-detail-active .image-controls{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:420px){.wwidget .widget-section-images .images{grid-template-columns:1fr}.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:1fr}.wwidget .shark-detail-active .shark-image-settings{grid-template-columns:1fr}.wwidget .shark-image-settings label{grid-column:1/-1}}
+html[data-game-ui] .wwidget .widget-section-images,html[data-game-ui] .wwidget .images .shark-gallery-card,html[data-game-ui] .wwidget .shark-gallery-search{border-radius:2px}
 `;
 class mo extends Error {
   name = "macrosharkError";
@@ -5160,12 +5204,13 @@ var yo = `<button class="wopen-button" aria-label="Toggle widget">\r
 <button class="shark-canvas-toggle" type="button" aria-expanded="true"><i class="fa-solid fa-images" aria-hidden="true"></i><span>Ocultar canvas</span></button>
 <details class="widget-section widget-section-images" open>
     <summary class="widget-section-summary">
-      <strong class="widget-section-title" data-i18n="imagesSection">Images</strong>
+      <strong class="widget-section-title">Canvas</strong><span class="shark-gallery-count"></span>
       <button type="button" class="toggle-overlay shark-overlay-compact" title="Ocultar/mostrar overlays" aria-label="Ocultar/mostrar overlays"><i class="fa-solid fa-layer-group"></i></button><button type="button" class="macroshark-reference-toggle" aria-pressed="false" title="Referencia visual para pintar a mano"><span>Vista previa</span></button><span class="images-collapse-state" data-i18n="widgetImagesCollapse">Collapse images</span>
       <button class="shark-hide-canvas" type="button" title="Ocultar panel de imágenes" aria-label="Ocultar panel de imágenes"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
       <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
     </summary>
     <div class="widget-image-actions">\r
+      <input class="shark-gallery-search" type="search" placeholder="Buscar plantillas" aria-label="Buscar plantillas">\r
       <label class="macroshark-inline-file"><span>Importar Imagen</span><input class="add-image" type="file" accept="image/*,.oki,.kgm,.wplace" aria-label="Importar imagen o plantilla"></label>\r
       \r
     </div>\r
@@ -15735,6 +15780,12 @@ class jo extends ao {
       $imagesCollapseState: ".images-collapse-state"
     }), this.$widgetLogo.src = Ea, this.$wopenButton.addEventListener("click", () => {
       this.open = !this.open;
+      if (!this.open) {
+        this.element.style.left = '';
+        this.element.style.right = '8px';
+        this.element.style.top = '';
+        return;
+      }
       requestAnimationFrame(() => {
         const panel = this.element;
         const rect = panel.getBoundingClientRect();
@@ -15764,7 +15815,7 @@ class jo extends ao {
       if (this.autoOverlayIntervalId || this.autoOverlayTickRunning) this.stopAutoOverlay();else if (!this.drawActionRunning) this.startAutoOverlay();
     }), this.$autoOverlayStop.addEventListener("click", () => {
       this.stopAutoOverlay();
-    }), this.installMobileQuickActions(), this.installFloatingPanels(), this.installSafetyControls(), this.installWorkspacePanels(), this.installReferencePreview(), this.applyImagesCollapsedPreference(), this.$imagesSection.addEventListener("toggle", () => {
+    }), this.installMobileQuickActions(), this.installFloatingPanels(), this.installSafetyControls(), this.installWorkspacePanels(), this.installReferencePreview(), this.element.querySelector('.shark-gallery-search').addEventListener('input', () => this.filterGallery()), this.applyImagesCollapsedPreference(), this.$imagesSection.addEventListener("toggle", () => {
       if (this.persistImagesCollapsedPreference(!this.$imagesSection.open), this.refreshImagesCollapseText(), !this.$imagesSection.open || !this.imagesListDirty) return;
       this.renderImagesList(), this.imagesListDirty = !1;
     }), this.registerEvent(document, "keydown", this.handleKeyboard.bind(this), {
@@ -15851,6 +15902,12 @@ class jo extends ao {
         start = null;
         panel.classList.remove('shark-dragging');
         const rect = panel.getBoundingClientRect();
+        if (panel === main && !this.open) {
+          panel.style.left = '';
+          panel.style.right = '8px';
+          panel.style.top = clamp(rect.top, 8, innerHeight - rect.height - 8) + 'px';
+          return;
+        }
         const left = rect.left + rect.width / 2 < innerWidth / 2 ? 8 : Math.max(8, innerWidth - rect.width - 8);
         panel.style.left = left + 'px';
         panel.style.top = clamp(rect.top, 8, innerHeight - rect.height - 8) + 'px';
@@ -15869,6 +15926,10 @@ class jo extends ao {
     drag(canvas, canvas.querySelector('.widget-section-summary'));
     window.addEventListener('resize', () => {
       for (const panel of [main, canvas]) {
+        if (panel === main && !this.open) {
+          panel.style.left = '';
+          panel.style.right = '8px';
+        }
         if (panel.style.left) panel.style.left = clamp(parseFloat(panel.style.left), 8, innerWidth - panel.offsetWidth - 8) + 'px';
         if (panel.style.top) panel.style.top = clamp(parseFloat(panel.style.top), 8, innerHeight - panel.offsetHeight - 8) + 'px';
       }
@@ -15876,11 +15937,9 @@ class jo extends ao {
   }
   placeFloatingCanvas() {
     if (!this.canvasVisible || this.$imagesSection.style.left) return;
-    const main = this.element.getBoundingClientRect();
     const canvas = this.$imagesSection;
-    const right = Math.max(8, innerWidth - canvas.offsetWidth - 8);
-    canvas.style.left = innerWidth >= main.width + canvas.offsetWidth + 24 ? right + 'px' : '8px';
-    canvas.style.top = Math.max(8, Math.min(main.bottom + 8, innerHeight - canvas.offsetHeight - 8)) + 'px';
+    canvas.style.left = Math.max(8, (innerWidth - canvas.offsetWidth) / 2) + 'px';
+    canvas.style.top = Math.max(8, (innerHeight - canvas.offsetHeight) / 2) + 'px';
   }
   syncQuickPanel() {
     if (!this.$miniGrid) return;
@@ -15956,6 +16015,7 @@ class jo extends ao {
           await this.waitForStableViewportProjection();
           i = new S(this.bot, J.fromScreenPosition(this.bot, this.defaultImageScreenPosition()), new q(this.bot, optimized));
         }
+        if (!i.displayName) i.displayName = l.name.replace(/\.(?:oki|kgm|wplace|png|jpe?g|webp|gif)$/i, '') || l.name;
         this.bot.images.push(i);
         console.log("[MACROSHARK][Widget] Image instance added", {
           images: this.bot.images.length
@@ -16192,14 +16252,19 @@ class jo extends ao {
     this.bot.scheduleReferencePreview?.();
     this.$images.innerHTML = "";
     this.imageProgressRows = new Map();
+    if (this.selectedGalleryImage && !this.bot.images.includes(this.selectedGalleryImage)) this.selectedGalleryImage = null;
+    this.$images.classList.toggle('shark-detail-mode', !!this.selectedGalleryImage);
+    this.$imagesSection.querySelector('.shark-gallery-count').textContent = `${this.bot.images.length} locales`;
     let o = document.createDocumentFragment();
     for (let a = 0; a < this.bot.images.length; a++) {
       let l = this.bot.images[a],
         i = document.createElement("div");
-      o.append(i), i.className = "image", i.innerHTML = `<button class="preview" title="View preview">
+      o.append(i), i.className = "image shark-gallery-card", i.innerHTML = `<button class="shark-detail-back" type="button" aria-label="Volver a canvas">← Volver</button><button class="preview" title="Abrir opciones de esta plantilla">
   <img src="${l.pixels.image.src}" alt="Image preview">
 </button>
+  <div class="shark-card-heading"><strong class="shark-card-name"></strong><span class="shark-card-size"></span></div>
   <div class="image-progress"><span class="image-progress-label"></span><progress max="100" value="0" aria-label="Progreso de imagen"></progress></div>
+  <div class="shark-image-settings"><label>Modo de pintado<select class="shark-card-strategy" aria-label="Modo de pintado de esta plantilla"></select></label><label>Opacidad <output class="shark-card-opacity-value"></output><input class="shark-card-opacity" type="range" min="0" max="100" aria-label="Opacidad de esta plantilla"></label><label><input class="shark-card-colors-order" type="checkbox"> Dibujar colores en orden</label><label><input class="shark-card-transparent" type="checkbox"> Pintar píxeles transparentes</label><label><input class="shark-card-available" type="checkbox"> Solo colores disponibles</label></div>
   <div class="image-controls">
     <button class="focus-map" title="Go to image position"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i></button>
     <button class="colors" title="Show colors"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
@@ -16209,8 +16274,54 @@ class jo extends ao {
     <button class="delete" title="Delete image"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
     <button class="up" title="Move up" ${a === 0 ? "disabled" : ""}><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
     <button class="down" title="Move down" ${a === this.bot.images.length - 1 ? "disabled" : ""}><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
-  </div>`, this.imageProgressRows.set(l, i.querySelector(".image-progress")), i.querySelector(".preview").addEventListener("click", () => {
-        this.activeImageIndex = a, l.openPreviewPanel();
+  </div>`;
+      i.querySelector('.shark-card-name').textContent = l.displayName || `Plantilla ${a + 1}`;
+      i.querySelector('.shark-card-size').textContent = `${l.pixels.width} × ${l.pixels.height}`;
+      i.classList.toggle('shark-detail-active', this.selectedGalleryImage === l);
+      const strategy = i.querySelector('.shark-card-strategy');
+      strategy.replaceChildren(...Array.from(l.$strategy.options, option => option.cloneNode(true)));
+      strategy.value = l.strategy;
+      strategy.addEventListener('change', () => {
+        l.$strategy.value = strategy.value;
+        l.$strategy.dispatchEvent(new Event('change'));
+        l.updateTasks();
+        this.bot.updateTasks();
+        H(this.bot);
+      });
+      const opacity = i.querySelector('.shark-card-opacity');
+      const opacityValue = i.querySelector('.shark-card-opacity-value');
+      opacity.value = String(l.opacity);
+      opacityValue.textContent = l.opacity + '%';
+      opacity.addEventListener('input', () => {
+        opacityValue.textContent = opacity.value + '%';
+        l.$opacity.value = opacity.value;
+        l.$opacity.dispatchEvent(new Event('input'));
+      });
+      for (const [selector, original] of [['.shark-card-colors-order', l.$drawColorsInOrder], ['.shark-card-transparent', l.$drawTransparent], ['.shark-card-available', l.$skipUnavailable]]) {
+        const control = i.querySelector(selector);
+        control.checked = original.checked;
+        control.addEventListener('change', () => {
+          original.checked = control.checked;
+          original.dispatchEvent(new Event('click'));
+          l.updateTasks();
+          this.bot.updateTasks();
+        });
+      }
+      this.imageProgressRows.set(l, i.querySelector(".image-progress"));
+      i.querySelector('.preview').addEventListener('click', () => {
+        this.activeImageIndex = a;
+        this.selectedGalleryImage = l;
+        this.renderImagesList();
+      });
+      i.addEventListener('click', event => {
+        if (this.selectedGalleryImage || event.target.closest('button, input, select, label')) return;
+        this.activeImageIndex = a;
+        this.selectedGalleryImage = l;
+        this.renderImagesList();
+      });
+      i.querySelector('.shark-detail-back').addEventListener('click', () => {
+        this.selectedGalleryImage = null;
+        this.renderImagesList();
       }), i.querySelector(".focus-map").addEventListener("click", () => {
         this.activeImageIndex = a, l.position.scrollScreenTo();
       }), i.querySelector(".colors").addEventListener("click", () => {
@@ -16231,7 +16342,19 @@ class jo extends ao {
       });
     }
     this.$images.append(o);
+    this.filterGallery();
     this.refreshProgress();
+  }
+  filterGallery() {
+    const query = this.element.querySelector('.shark-gallery-search')?.value.trim().toLocaleLowerCase() || '';
+    let visible = 0;
+    for (const card of this.$images.querySelectorAll('.shark-gallery-card')) {
+      const matches = !query || card.querySelector('.shark-card-name').textContent.toLocaleLowerCase().includes(query);
+      card.hidden = !matches && !card.classList.contains('shark-detail-active');
+      if (!card.hidden) visible++;
+    }
+    const count = this.$imagesSection.querySelector('.shark-gallery-count');
+    if (count) count.textContent = `${visible} de ${this.bot.images.length} locales`;
   }
   refreshProgress() {
     for (const [image, row] of this.imageProgressRows ?? []) {
@@ -16296,7 +16419,7 @@ class jo extends ao {
     dialog.className = 'macroshark-guide';
     dialog.setAttribute('aria-labelledby', 'macroshark-guide-title');
     dialog.innerHTML = "<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><s\
-mall>Plus.25 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
+mall>Plus.26 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
 >×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Importa una imagen, colócala en el mapa, seleccio\
 na los colores disponibles y elige cómo dibujarla.</p>\n<details open><summary>Primeros pasos</summary><ol><li\
 >Pulsa <b>Importar Imagen</b> y elige una imagen o una plantilla .oki/.kgm/.wplace. Las plantillas .wplace conservan su posición guardada en el mapa.</li><li>Abre el candado de\
@@ -18638,7 +18761,7 @@ function macrosharkStartupError(error) {
 }
 const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/latest.json';
 const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js';
-const MACROSHARK_CURRENT_VERSION = 'Plus.25';
+const MACROSHARK_CURRENT_VERSION = 'Plus.26';
 
 function macrosharkVersionNumber(value) {
   const match = /^Plus\.(\d+)$/.exec(value);
@@ -18741,8 +18864,8 @@ try {
     const shared = globalThis.unsafeWindow ?? globalThis;
     if (!shared.__macrosharkBooting && !root?.hasAttribute('data-macroshark-active') && !document.querySelector('.wwidget')) {
       shared.__macrosharkBooting = true;
-      if (root) root.setAttribute('data-macroshark-active', 'Plus.25');
-      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.25'), { once: true });
+      if (root) root.setAttribute('data-macroshark-active', 'Plus.26');
+      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.26'), { once: true });
       ll();
       globalThis.macroshark = new ba();
       macrosharkStartUpdateChecks();
