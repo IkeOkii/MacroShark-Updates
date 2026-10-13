@@ -1,23 +1,29 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.20**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.21**.
 
 ## Instalación y actualizaciones
 
 Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js) desde su enlace directo en Tampermonkey (PC) o mediante **Importar desde enlace** en Stay (iPhone). Mantén una sola copia activa y recarga WPlace. Puedes respaldar tus plantillas como `.oki` antes de reemplazar una instalación anterior.
 
-Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión se reemplaza `MacroShark.user.js` en la rama `main` y se aumenta `@version`. El gestor de scripts podrá comprobar ese enlace; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. No se almacena ningún token de GitHub en el script.
+Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` apuntan al script de aquí. Para publicar otra versión, reemplaza `MacroShark.user.js` en `main` y aumenta `@version`. Después actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
 
-Si instalaste Plus.19 desde el repositorio privado, importa Plus.20 una vez desde el enlace anterior. Esa versión previa no tenía configurada la actualización automática.
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.21 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
 
 ## Nota de actualizaciones
+
+### Plus.21
+
+- Avisa a pantalla completa cuando detecta una versión nueva, con enlace de instalación e instrucciones para Stay. Comprueba al abrir WPlace y cada 30 minutos mientras siga abierto.
+- AutoDraw confirma automáticamente cada tanda aunque «Pintar automáticamente» de Dibujar esté apagado. Conserva las pausas ante errores, límites y verificaciones.
+- Actualiza la guía integrada. Pruebas locales del aviso en escritorio y móvil simulados, y de la confirmación de AutoDraw.
 
 ### Plus.20
 
 - Configura un enlace público estable para las futuras actualizaciones automáticas, sin exponer credenciales.
-- Corrige la continuidad de AutoDraw cuando WPlace cierra la paleta después de confirmar una tanda: vuelve a leer el mapa antes de continuar. Ante errores o verificaciones, se pausa.
+- Mejora la continuidad de AutoDraw cuando WPlace cierra la paleta después de confirmar una tanda: vuelve a leer el mapa antes de continuar. Ante errores o verificaciones, se pausa.
 - Añade un aviso de arranque si falla la carga del panel, para facilitar el diagnóstico en dispositivos móviles.
-- Verificaciones locales: sintaxis, arranque simulado en escritorio y móvil, y ciclo de pintado simulado. **El funcionamiento en un iPhone real sigue pendiente de prueba.**
+- Verificaciones locales: sintaxis, arranque simulado en escritorio y móvil, y ciclo de pintado simulado. El funcionamiento en un iPhone real sigue pendiente de prueba.
 
 ### Plus.19
 
