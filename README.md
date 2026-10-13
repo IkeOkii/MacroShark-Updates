@@ -1,6 +1,6 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.22**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.23**.
 
 ## Instalación y actualizaciones
 
@@ -8,9 +8,15 @@ Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShar
 
 Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.22 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.22 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.## Nota de actualizaciones
 
-## Nota de actualizaciones
+### Plus.23
+
+- Elimina el fondo estrellado y la superficie de altura completa: los paneles flotan sobre el mapa.
+- El canvas inicia oculto y se abre con «Mostrar canvas» desde el panel principal.
+- Reduce el tamaño del script al retirar la imagen de fondo incrustada.
+
+
 
 ### Plus.22
 
