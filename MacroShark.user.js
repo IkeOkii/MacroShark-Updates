@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.26
+// @version      Plus.27
 // @description  Macro local para PC y móvil con controles táctiles y filtro de colores disponibles
 // @author       Ike
 // @license      MPL-2.0
@@ -5005,7 +5005,7 @@ html[data-game-ui] .wwidget.wopen,html[data-game-ui] .wwidget.wopen>.title,html[
 html[data-game-ui] .wwidget.wopen{box-shadow:4px 4px 0 color-mix(in srgb,var(--shark-ink) 40%,transparent)}
 html[data-game-ui] .wwidget:not(.wopen) .shark-mini-grid>button{border-width:2px;border-radius:2px;box-shadow:3px 3px 0 color-mix(in srgb,var(--shark-ink) 38%,transparent)}
 
-/* Plus.26: canvas gallery and independent settings for every image. */
+/* Plus.27: canvas gallery and independent settings for every image. */
 .wwidget .widget-section-images{position:fixed;z-index:1002;box-sizing:border-box;width:min(940px,calc(100vw - 16px))!important;max-height:min(82dvh,760px)!important;min-height:min(460px,calc(100dvh - 16px));padding:0!important;overflow-y:auto;border:2px solid var(--shark-line);border-radius:8px;background:var(--shark-raised);color:var(--shark-ink)}
 .wwidget .widget-section-images>.widget-section-summary{position:sticky;top:0;z-index:2;box-sizing:border-box;min-height:62px;margin:0;padding:12px 16px;border-bottom:1px solid var(--shark-line);border-radius:0;background:var(--shark-control);color:var(--shark-ink)}
 .wwidget .widget-section-images .widget-section-title{font-size:15px;color:var(--shark-ink)}
@@ -5044,6 +5044,26 @@ html[data-game-ui] .wwidget:not(.wopen) .shark-mini-grid>button{border-width:2px
 @media(max-width:700px){.wwidget .widget-section-images{max-height:calc(100dvh - 16px)!important;min-height:0}.wwidget .widget-section-images .images{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:minmax(0,1fr) 130px;padding:8px}.wwidget .widget-section-images .shark-gallery-count,.wwidget .widget-section-images .images-collapse-state{display:none}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:nowrap;gap:5px;padding:8px}.wwidget .widget-section-images .shark-overlay-compact span,.wwidget .widget-section-images .macroshark-reference-toggle span{display:none}.wwidget .widget-section-images .macroshark-reference-toggle{width:30px;min-width:30px;padding:0!important}.wwidget .widget-section-images .macroshark-reference-toggle::before{content:'◫';font-size:16px}.wwidget .images .shark-gallery-card.shark-detail-active{grid-template-columns:1fr;grid-template-rows:auto auto auto auto auto auto}.wwidget .shark-detail-active .shark-detail-back,.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .shark-card-heading,.wwidget .shark-detail-active .image-progress,.wwidget .shark-detail-active .shark-image-settings,.wwidget .shark-detail-active .image-controls{grid-column:1;grid-row:auto}.wwidget .shark-detail-active .preview{min-height:180px}.wwidget .shark-detail-active .image-controls{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:420px){.wwidget .widget-section-images .images{grid-template-columns:1fr}.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:1fr}.wwidget .shark-detail-active .shark-image-settings{grid-template-columns:1fr}.wwidget .shark-image-settings label{grid-column:1/-1}}
 html[data-game-ui] .wwidget .widget-section-images,html[data-game-ui] .wwidget .images .shark-gallery-card,html[data-game-ui] .wwidget .shark-gallery-search{border-radius:2px}
+/* Plus.27: apply WPlace's active palette and normal/pixel geometry across MacroShark. */
+:root{--ms-surface:var(--color-base-100,#fff);--ms-raised:var(--color-base-200,#f2f7fe);--ms-control:var(--color-base-300,#e3e9f4);--ms-ink:var(--color-base-content,#394e6a);--ms-accent:var(--color-primary,#6157f5);--ms-on-accent:var(--color-primary-content,#fff);--ms-border:color-mix(in srgb,var(--ms-ink) 30%,transparent)}
+.wwidget,.macroshark-guide,.macroshark-modal,.macroshark-native-notice,.wimage .wform,.wimage .wtopbar{color:var(--ms-ink)!important;border-color:var(--ms-border)!important}
+.wwidget.wopen,.wwidget.wopen>.title,.wwidget .widget-section-images,.wwidget .shark-subpanel,.macroshark-guide,.macroshark-modal,.macroshark-native-notice,.wimage .wform,.wimage .wtopbar{background:var(--ms-surface)!important}
+.wwidget .shark-main-actions,.wwidget .wform>.widget-section,.wwidget .widget-section-images .images,.wwidget .shark-image-settings label,.macroshark-guide details,.macroshark-guide-head,.macroshark-modal-head,.macroshark-modal .color-tools{background:var(--ms-raised)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important}
+.wwidget.wopen button:not(.shark-running),.wwidget .widget-section-images button:not(.shark-running),.macroshark-guide button,.macroshark-modal button,.macroshark-native-notice button,.wimage .wtopbar button{background:var(--ms-control)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important}
+.wwidget button.shark-running,.wwidget .shark-canvas-toggle.shark-running,.wwidget .widget-section-images .macroshark-inline-file,.macroshark-modal button.is-active{background:var(--ms-accent)!important;color:var(--ms-on-accent)!important;border-color:var(--ms-accent)!important}
+.wwidget select,.wwidget input:not([type=checkbox]):not([type=range]),.macroshark-modal select,.macroshark-modal input:not([type=checkbox]):not([type=range]),.macroshark-guide input,.shark-gallery-search{background:var(--ms-surface)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important}
+.wwidget.wopen,.wwidget.wopen>.title,.wwidget .widget-section-images,.wwidget .shark-subpanel,.macroshark-guide,.macroshark-modal,.macroshark-native-notice{border-radius:24px!important;box-shadow:0 9px 24px rgb(0 0 0 / 22%)}
+.wwidget .shark-main-actions{border-radius:20px!important}.wwidget .widget-section-images>.widget-section-summary,.macroshark-guide-head,.macroshark-modal-head{border-radius:22px 22px 0 0!important}
+.wwidget.wopen button,.wwidget .widget-section-images button,.macroshark-guide button,.macroshark-modal button,.macroshark-native-notice button,.wimage .wtopbar button{border-radius:999px!important}
+.wwidget .images .shark-gallery-card,.wwidget .shark-image-settings label,.macroshark-guide details{border-radius:18px!important;box-shadow:none!important}
+.wwidget .shark-gallery-search,.wwidget select,.wwidget input:not([type=checkbox]):not([type=range]),.macroshark-modal select,.macroshark-modal input:not([type=checkbox]):not([type=range]){border-radius:12px!important}
+.wwidget .images .shark-gallery-card .preview{border-radius:14px!important;background:repeating-conic-gradient(var(--ms-control) 0% 25%,var(--ms-raised) 0% 50%) 50% / 16px 16px!important;box-shadow:none!important}
+.wimage .wform{border-radius:20px!important;box-shadow:0 9px 24px rgb(0 0 0 / 22%)!important}.wimage .wform label,.wimage .wform .macroshark-switch-row,.wimage .wform .strategy-row{background:var(--ms-raised)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important}.wimage .wform button,.wimage .wform select{background:var(--ms-control)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important;border-radius:999px!important}
+.macroshark-guide summary,.macroshark-guide dt,.macroshark-guide-head small,.macroshark-modal strong,.macroshark-modal label,.macroshark-modal p{color:var(--ms-ink)!important}
+#macroshark-update-screen{color:var(--ms-ink)!important}#macroshark-update-screen>div,#macroshark-startup-error{background:var(--ms-surface)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important;border-radius:24px!important;box-shadow:0 9px 24px rgb(0 0 0 / 22%)!important}#macroshark-update-screen button{background:var(--ms-control)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important;border-radius:999px!important}#macroshark-update-screen a{background:var(--ms-accent)!important;color:var(--ms-on-accent)!important;border-color:var(--ms-accent)!important;border-radius:999px!important}
+html[data-game-ui] .wwidget.wopen,html[data-game-ui] .wwidget.wopen>.title,html[data-game-ui] .wwidget .widget-section-images,html[data-game-ui] .wwidget .shark-subpanel,html[data-game-ui] .macroshark-guide,html[data-game-ui] .macroshark-modal,html[data-game-ui] .macroshark-native-notice,html[data-game-ui] #macroshark-update-screen>div,html[data-game-ui] #macroshark-startup-error{border-radius:2px!important;box-shadow:4px 4px 0 color-mix(in srgb,var(--ms-ink) 35%,transparent)!important}
+html[data-game-ui] .wwidget .shark-main-actions,html[data-game-ui] .wwidget .widget-section-images>.widget-section-summary,html[data-game-ui] .wwidget .images .shark-gallery-card,html[data-game-ui] .wwidget .shark-image-settings label,html[data-game-ui] .macroshark-guide-head,html[data-game-ui] .macroshark-guide details,html[data-game-ui] .macroshark-modal-head,html[data-game-ui] .wwidget button,html[data-game-ui] .macroshark-guide button,html[data-game-ui] .macroshark-modal button,html[data-game-ui] .macroshark-native-notice button,html[data-game-ui] #macroshark-update-screen button,html[data-game-ui] #macroshark-update-screen a,html[data-game-ui] .wwidget select,html[data-game-ui] .wwidget input,html[data-game-ui] .shark-gallery-search,html[data-game-ui] .wimage .wtopbar button{border-radius:2px!important}
+html[data-game-ui] .wwidget .images .shark-gallery-card .preview,html[data-game-ui] .wimage .wform,html[data-game-ui] .wimage .wform button,html[data-game-ui] .wimage .wform select{border-radius:2px!important}
 `;
 class mo extends Error {
   name = "macrosharkError";
@@ -16419,7 +16439,7 @@ class jo extends ao {
     dialog.className = 'macroshark-guide';
     dialog.setAttribute('aria-labelledby', 'macroshark-guide-title');
     dialog.innerHTML = "<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><s\
-mall>Plus.26 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
+mall>Plus.27 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
 >×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Importa una imagen, colócala en el mapa, seleccio\
 na los colores disponibles y elige cómo dibujarla.</p>\n<details open><summary>Primeros pasos</summary><ol><li\
 >Pulsa <b>Importar Imagen</b> y elige una imagen o una plantilla .oki/.kgm/.wplace. Las plantillas .wplace conservan su posición guardada en el mapa.</li><li>Abre el candado de\
@@ -18761,7 +18781,7 @@ function macrosharkStartupError(error) {
 }
 const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/latest.json';
 const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js';
-const MACROSHARK_CURRENT_VERSION = 'Plus.26';
+const MACROSHARK_CURRENT_VERSION = 'Plus.27';
 
 function macrosharkVersionNumber(value) {
   const match = /^Plus\.(\d+)$/.exec(value);
@@ -18864,8 +18884,8 @@ try {
     const shared = globalThis.unsafeWindow ?? globalThis;
     if (!shared.__macrosharkBooting && !root?.hasAttribute('data-macroshark-active') && !document.querySelector('.wwidget')) {
       shared.__macrosharkBooting = true;
-      if (root) root.setAttribute('data-macroshark-active', 'Plus.26');
-      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.26'), { once: true });
+      if (root) root.setAttribute('data-macroshark-active', 'Plus.27');
+      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.27'), { once: true });
       ll();
       globalThis.macroshark = new ba();
       macrosharkStartUpdateChecks();
