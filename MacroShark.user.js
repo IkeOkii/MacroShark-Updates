@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.27
+// @version      Plus.28
 // @description  Macro local para PC y móvil con controles táctiles y filtro de colores disponibles
 // @author       Ike
 // @license      MPL-2.0
@@ -1848,6 +1848,8 @@ class S extends ao {
   updatePlacement() {
     const point = this.position.toScreenPosition(),
       scale = this.position.pixelSize;
+    // At smaller map scales WPlace no longer displays the painted pixel layer.
+    this.element.classList.toggle('macroshark-zoom-hidden', !Number.isFinite(scale) || scale < 0.25);
     const width = scale * this.pixels.width,
       height = scale * this.pixels.height;
     if (![point.x, point.y, width, height].every(Number.isFinite) || width <= 0 || height <= 0) return;
@@ -5005,7 +5007,7 @@ html[data-game-ui] .wwidget.wopen,html[data-game-ui] .wwidget.wopen>.title,html[
 html[data-game-ui] .wwidget.wopen{box-shadow:4px 4px 0 color-mix(in srgb,var(--shark-ink) 40%,transparent)}
 html[data-game-ui] .wwidget:not(.wopen) .shark-mini-grid>button{border-width:2px;border-radius:2px;box-shadow:3px 3px 0 color-mix(in srgb,var(--shark-ink) 38%,transparent)}
 
-/* Plus.27: canvas gallery and independent settings for every image. */
+/* Plus.28: canvas gallery and independent settings for every image. */
 .wwidget .widget-section-images{position:fixed;z-index:1002;box-sizing:border-box;width:min(940px,calc(100vw - 16px))!important;max-height:min(82dvh,760px)!important;min-height:min(460px,calc(100dvh - 16px));padding:0!important;overflow-y:auto;border:2px solid var(--shark-line);border-radius:8px;background:var(--shark-raised);color:var(--shark-ink)}
 .wwidget .widget-section-images>.widget-section-summary{position:sticky;top:0;z-index:2;box-sizing:border-box;min-height:62px;margin:0;padding:12px 16px;border-bottom:1px solid var(--shark-line);border-radius:0;background:var(--shark-control);color:var(--shark-ink)}
 .wwidget .widget-section-images .widget-section-title{font-size:15px;color:var(--shark-ink)}
@@ -5044,7 +5046,7 @@ html[data-game-ui] .wwidget:not(.wopen) .shark-mini-grid>button{border-width:2px
 @media(max-width:700px){.wwidget .widget-section-images{max-height:calc(100dvh - 16px)!important;min-height:0}.wwidget .widget-section-images .images{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:minmax(0,1fr) 130px;padding:8px}.wwidget .widget-section-images .shark-gallery-count,.wwidget .widget-section-images .images-collapse-state{display:none}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:nowrap;gap:5px;padding:8px}.wwidget .widget-section-images .shark-overlay-compact span,.wwidget .widget-section-images .macroshark-reference-toggle span{display:none}.wwidget .widget-section-images .macroshark-reference-toggle{width:30px;min-width:30px;padding:0!important}.wwidget .widget-section-images .macroshark-reference-toggle::before{content:'◫';font-size:16px}.wwidget .images .shark-gallery-card.shark-detail-active{grid-template-columns:1fr;grid-template-rows:auto auto auto auto auto auto}.wwidget .shark-detail-active .shark-detail-back,.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .shark-card-heading,.wwidget .shark-detail-active .image-progress,.wwidget .shark-detail-active .shark-image-settings,.wwidget .shark-detail-active .image-controls{grid-column:1;grid-row:auto}.wwidget .shark-detail-active .preview{min-height:180px}.wwidget .shark-detail-active .image-controls{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:420px){.wwidget .widget-section-images .images{grid-template-columns:1fr}.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:1fr}.wwidget .shark-detail-active .shark-image-settings{grid-template-columns:1fr}.wwidget .shark-image-settings label{grid-column:1/-1}}
 html[data-game-ui] .wwidget .widget-section-images,html[data-game-ui] .wwidget .images .shark-gallery-card,html[data-game-ui] .wwidget .shark-gallery-search{border-radius:2px}
-/* Plus.27: apply WPlace's active palette and normal/pixel geometry across MacroShark. */
+/* Plus.28: apply WPlace's active palette and normal/pixel geometry across MacroShark. */
 :root{--ms-surface:var(--color-base-100,#fff);--ms-raised:var(--color-base-200,#f2f7fe);--ms-control:var(--color-base-300,#e3e9f4);--ms-ink:var(--color-base-content,#394e6a);--ms-accent:var(--color-primary,#6157f5);--ms-on-accent:var(--color-primary-content,#fff);--ms-border:color-mix(in srgb,var(--ms-ink) 30%,transparent)}
 .wwidget,.macroshark-guide,.macroshark-modal,.macroshark-native-notice,.wimage .wform,.wimage .wtopbar{color:var(--ms-ink)!important;border-color:var(--ms-border)!important}
 .wwidget.wopen,.wwidget.wopen>.title,.wwidget .widget-section-images,.wwidget .shark-subpanel,.macroshark-guide,.macroshark-modal,.macroshark-native-notice,.wimage .wform,.wimage .wtopbar{background:var(--ms-surface)!important}
@@ -5064,6 +5066,57 @@ html[data-game-ui] .wwidget .widget-section-images,html[data-game-ui] .wwidget .
 html[data-game-ui] .wwidget.wopen,html[data-game-ui] .wwidget.wopen>.title,html[data-game-ui] .wwidget .widget-section-images,html[data-game-ui] .wwidget .shark-subpanel,html[data-game-ui] .macroshark-guide,html[data-game-ui] .macroshark-modal,html[data-game-ui] .macroshark-native-notice,html[data-game-ui] #macroshark-update-screen>div,html[data-game-ui] #macroshark-startup-error{border-radius:2px!important;box-shadow:4px 4px 0 color-mix(in srgb,var(--ms-ink) 35%,transparent)!important}
 html[data-game-ui] .wwidget .shark-main-actions,html[data-game-ui] .wwidget .widget-section-images>.widget-section-summary,html[data-game-ui] .wwidget .images .shark-gallery-card,html[data-game-ui] .wwidget .shark-image-settings label,html[data-game-ui] .macroshark-guide-head,html[data-game-ui] .macroshark-guide details,html[data-game-ui] .macroshark-modal-head,html[data-game-ui] .wwidget button,html[data-game-ui] .macroshark-guide button,html[data-game-ui] .macroshark-modal button,html[data-game-ui] .macroshark-native-notice button,html[data-game-ui] #macroshark-update-screen button,html[data-game-ui] #macroshark-update-screen a,html[data-game-ui] .wwidget select,html[data-game-ui] .wwidget input,html[data-game-ui] .shark-gallery-search,html[data-game-ui] .wimage .wtopbar button{border-radius:2px!important}
 html[data-game-ui] .wwidget .images .shark-gallery-card .preview,html[data-game-ui] .wimage .wform,html[data-game-ui] .wimage .wform button,html[data-game-ui] .wimage .wform select{border-radius:2px!important}
+/* Plus.28: keep Canvas centered as its content changes and use neutral shadows. */
+.wwidget .widget-section-images{position:fixed!important;top:50dvh!important;left:50vw!important;right:auto!important;transform:translate(-50%,-50%)!important;width:min(940px,calc(100vw - 16px))!important;max-height:calc(100dvh - 16px)!important;min-height:0!important;margin:0!important;overflow-y:auto}
+.wwidget .widget-section-images>.widget-section-summary{min-height:52px;padding:8px 14px;cursor:default;touch-action:auto}
+.wwidget .widget-section-images>.widget-section-summary::marker{content:''}
+.wwidget .widget-section-images>.widget-section-summary::-webkit-details-marker{display:none}
+.wwidget .widget-section-images>.widget-section-summary>.shark-hide-canvas i{transform:none!important}
+.wwidget:not(.wopen) .shark-mini-grid{gap:8px}
+.wwidget:not(.wopen) .shark-mini-grid{position:relative;z-index:1003}
+.wwidget:not(.wopen) .shark-mini-grid>button{flex:0 0 40px;width:40px;height:40px;min-height:40px;border-radius:999px}
+html[data-game-ui] .wwidget:not(.wopen) .shark-mini-grid>button{border-radius:2px}
+.wwidget .widget-section-images:has(.shark-detail-mode){width:min(820px,calc(100vw - 16px))!important}
+.wwidget .images .shark-gallery-card.shark-detail-active{grid-template-columns:minmax(160px,30%) minmax(0,1fr);grid-template-rows:auto auto auto auto auto;gap:8px;min-height:0;padding:10px}
+.wwidget .shark-detail-active .shark-detail-back{min-height:30px}
+.wwidget .shark-detail-active .preview{grid-row:2/6;min-height:180px;max-height:230px}
+.wwidget .shark-detail-active .preview img{max-height:215px}
+.wwidget .shark-detail-active .shark-image-settings{gap:6px}
+.wwidget .shark-image-settings label{gap:4px;padding:6px 8px}
+.wwidget .shark-image-settings label:nth-child(2){grid-column:1}
+.wwidget .shark-image-settings .shark-card-reset-size{grid-column:2;min-height:42px;padding:5px 8px}
+.wimage .wrapper>.wform{display:none!important}
+.wimage.macroshark-zoom-hidden{display:none!important}
+.wwidget .shark-detail-active .image-controls{gap:5px}
+.wwidget .shark-detail-active .image-controls button{height:30px}
+.wwidget.wopen,.wwidget.wopen>.title,.wwidget .widget-section-images,.wwidget .shark-subpanel,.macroshark-guide,.macroshark-modal,.macroshark-native-notice,.wimage .wform,#macroshark-update-screen>div,#macroshark-startup-error{box-shadow:0 9px 24px rgb(0 0 0 / 30%)!important}
+.wimage .wrapper{border-color:var(--ms-border)!important;box-shadow:0 0 0 1px rgb(0 0 0 / 45%)!important}
+html[data-game-ui] .wwidget.wopen,html[data-game-ui] .wwidget.wopen>.title,html[data-game-ui] .wwidget .widget-section-images,html[data-game-ui] .wwidget .shark-subpanel,html[data-game-ui] .macroshark-guide,html[data-game-ui] .macroshark-modal,html[data-game-ui] .macroshark-native-notice,html[data-game-ui] .wimage .wform,html[data-game-ui] #macroshark-update-screen>div,html[data-game-ui] #macroshark-startup-error{box-shadow:4px 4px 0 rgb(0 0 0 / 45%)!important}
+html[data-game-ui] .wwidget:not(.wopen) .shark-mini-grid>button{box-shadow:3px 3px 0 rgb(0 0 0 / 40%)!important}
+@media(max-width:700px){.wwidget .widget-section-images{max-height:calc(100dvh - 12px)!important}.wwidget .images .shark-gallery-card.shark-detail-active{grid-template-columns:1fr;grid-template-rows:none}.wwidget .shark-detail-active .preview{grid-row:auto;min-height:120px;max-height:180px}.wwidget .shark-detail-active .preview img{max-height:165px}.wwidget .shark-detail-active .shark-image-settings{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .shark-detail-active .image-controls{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:420px){.wwidget .widget-section-images>.widget-section-summary{min-height:44px;padding:6px 8px}.wwidget .images .shark-gallery-card.shark-detail-active{padding:8px}.wwidget .shark-detail-active .shark-image-settings{grid-template-columns:1fr}.wwidget .shark-image-settings label:nth-child(2),.wwidget .shark-image-settings .shark-card-reset-size{grid-column:1}}
+/* WPlace-style painting dock and independent shark launcher. */
+.macroshark-launcher{position:fixed;z-index:1004;width:52px;height:52px;pointer-events:auto}
+.macroshark-launcher[hidden]{display:none!important}
+.macroshark-launcher>.wopen-button{position:static!important;display:grid;place-items:center;width:52px!important;height:52px!important;margin:0!important;padding:3px!important;border:2px solid var(--ms-border)!important;border-radius:999px!important;background:var(--ms-surface)!important;color:var(--ms-ink)!important;box-shadow:0 3px 12px rgb(0 0 0 / 35%)!important}
+.macroshark-launcher>.wopen-button img,.wwidget>.title>.wopen-button img{display:block;width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.wwidget.wopen{position:fixed!important;top:auto!important;bottom:var(--shark-dock-bottom,76px)!important;left:8px!important;right:8px!important;width:min(1380px,calc(100vw - 16px))!important;max-width:none!important;max-height:calc(100dvh - var(--shark-dock-bottom,76px) - 8px)!important;margin-inline:auto!important;overflow:visible!important;border:2px solid var(--ms-border)!important;background:var(--ms-surface)!important}
+.wwidget.wopen>.title{box-sizing:border-box;width:100%;min-height:50px;margin:0;padding:6px 10px;border:0;border-bottom:1px solid var(--ms-border);border-radius:22px 22px 0 0!important;background:var(--ms-surface)!important;cursor:default;touch-action:auto}
+.wwidget.wopen>.title>.wopen-button{flex:0 0 38px;width:38px;height:38px;border:1px solid var(--ms-border);padding:2px}
+.wwidget.wopen>.wform{display:grid;gap:7px;box-sizing:border-box;width:100%;max-height:min(48dvh,430px);padding:8px 10px 10px;overflow-y:auto;overflow-x:hidden;background:var(--ms-raised)!important;border-radius:0 0 22px 22px;scrollbar-gutter:stable}
+.wwidget.wopen .wform>.shark-main-actions{width:100%;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+.wwidget.wopen .shark-main-actions>.widget-section-summary{display:none}
+.wwidget.wopen .shark-actions-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.wwidget.wopen .shark-actions-grid>button{min-height:56px;padding:6px;line-height:1.15}
+.wwidget .shark-actions-grid>button.shark-running,.wwidget:not(.wopen) .shark-mini-grid>button.shark-running,.wwidget .widget-section-images button.shark-running{background:#14845a!important;border-color:#0f6a48!important;color:#fff!important}
+.wwidget.wopen .autooverlay-status{grid-column:1/-1;min-height:0}
+.wwidget.wopen.shark-subpanel-open{height:min(560px,calc(100dvh - var(--shark-dock-bottom,76px) - 8px))!important}
+.wwidget.wopen.shark-subpanel-open .shark-subpanel{position:absolute!important;inset:0!important;box-sizing:border-box;width:100%!important;height:100%!important;max-height:none!important;margin:0!important;overflow:hidden;border-radius:inherit!important}
+.wwidget:not(.wopen) .shark-mini-grid{z-index:1}
+html[data-game-ui] .macroshark-launcher>.wopen-button,html[data-game-ui] .wwidget.wopen>.title,html[data-game-ui] .wwidget.wopen>.wform{border-radius:2px!important}
+html[data-game-ui] .wwidget.wopen{border-width:3px!important}
+@media(max-width:920px){.wwidget.wopen .shark-actions-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:620px){.macroshark-launcher,.macroshark-launcher>.wopen-button{width:46px!important;height:46px!important}.wwidget.wopen>.title{min-height:44px;padding:5px 7px}.wwidget.wopen .widget-brand-text{font-size:15px}.wwidget.wopen .widget-brand img{width:30px;height:30px}.wwidget.wopen .header-config{flex-basis:32px;width:32px;height:32px}.wwidget.wopen>.title>.wopen-button{flex-basis:32px;width:32px;height:32px}.wwidget.wopen>.wform{max-height:min(52dvh,460px);padding:7px}.wwidget.wopen .shark-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.wwidget.wopen .shark-actions-grid>button{min-height:50px;font-size:11px}.wwidget.wopen.shark-subpanel-open{height:min(68dvh,calc(100dvh - var(--shark-dock-bottom,76px) - 8px))!important}}
 `;
 class mo extends Error {
   name = "macrosharkError";
@@ -5215,31 +5268,29 @@ var yo = `<button class="wopen-button" aria-label="Toggle widget">\r
 <button class="shark-open-editor"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Edición</span></button>
 <button class="autooverlay-start"><i class="fa-solid fa-play"></i><span>Iniciar AutoDraw</span></button>
 <button class="autooverlay-config"><i class="fa-solid fa-clock-rotate-left"></i><span>Configurar AutoDraw</span></button>
+<button class="shark-open-canvas" type="button"><i class="fa-solid fa-images" aria-hidden="true"></i><span>Canvas</span></button>
 </div>
 <button class="autooverlay-stop" hidden><i class="fa-solid fa-stop"></i></button>
 <button class="shark-resume" type="button" hidden>Reanudar tras revisar</button>
 <div class="wp autooverlay-status"></div>
 </details>
 <div class="shark-settings-storage" hidden><div class="shark-paint-settings"><button class="draw-and-paint" disabled type="button" aria-pressed="false"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Pintar automáticamente</span><span class="shark-auto-state">Apagado</span></button><label class="shark-pixel-limit">Píxeles por tanda: <output class="shark-pixel-value">Todos disponibles</output><input class="shark-pixel-range" type="range" min="1" max="1" value="1" step="1" aria-label="Píxeles por tanda"></label>\r<label class="shark-random-label"><input class="shark-random-quantity" type="checkbox"> Aleatorizar cantidad</label><p class="shark-random-hint">Desactivado: usa el límite elegido.</p></div></div>
-<button class="shark-canvas-toggle" type="button" aria-expanded="true"><i class="fa-solid fa-images" aria-hidden="true"></i><span>Ocultar canvas</span></button>
-<details class="widget-section widget-section-images" open>
-    <summary class="widget-section-summary">
+<section class="widget-section widget-section-images">
+    <div class="widget-section-summary">
       <strong class="widget-section-title">Canvas</strong><span class="shark-gallery-count"></span>
-      <button type="button" class="toggle-overlay shark-overlay-compact" title="Ocultar/mostrar overlays" aria-label="Ocultar/mostrar overlays"><i class="fa-solid fa-layer-group"></i></button><button type="button" class="macroshark-reference-toggle" aria-pressed="false" title="Referencia visual para pintar a mano"><span>Vista previa</span></button><span class="images-collapse-state" data-i18n="widgetImagesCollapse">Collapse images</span>
+      <button type="button" class="toggle-overlay shark-overlay-compact" title="Ocultar/mostrar overlays" aria-label="Ocultar/mostrar overlays"><i class="fa-solid fa-layer-group"></i></button><button type="button" class="macroshark-reference-toggle" aria-pressed="false" title="Referencia visual para pintar a mano"><span>Vista previa</span></button>
       <button class="shark-hide-canvas" type="button" title="Ocultar panel de imágenes" aria-label="Ocultar panel de imágenes"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-      <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-    </summary>
+    </div>
     <div class="widget-image-actions">\r
       <input class="shark-gallery-search" type="search" placeholder="Buscar plantillas" aria-label="Buscar plantillas">\r
       <label class="macroshark-inline-file"><span>Importar Imagen</span><input class="add-image" type="file" accept="image/*,.oki,.kgm,.wplace" aria-label="Importar imagen o plantilla"></label>\r
       \r
     </div>\r
     <div class="images"></div>\r
-  </details>\r
+  </section>\r
 </div>\r
 `;
 var oa = "macroshark:overlay-hidden",
-  aa = "macroshark:images-collapsed",
   ia = "macroshark:auto-overlay-config",
   Ea = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABJIAAAVACAYAAAATbHKPAABVeWNhQlgAAFV5anVtYgAAAB5qdW1kYzJwYQARABC\
 AAACqADibcQNjMnBhAAAAVVNqdW1iAAAAR2p1bWRjMm1hABEAEIAAAKoAOJtxA3VybjpjMnBhOjhlNGQ5NDJjLTcxNmEtNGZiNi1hOWI5LTQyO\
@@ -15796,23 +15847,10 @@ class jo extends ao {
       $autoOverlayStop: ".autooverlay-stop",
       $autoOverlayStatus: ".autooverlay-status",
       $images: ".images",
-      $imagesSection: ".widget-section-images",
-      $imagesCollapseState: ".images-collapse-state"
-    }), this.$widgetLogo.src = Ea, this.$wopenButton.addEventListener("click", () => {
+      $imagesSection: ".widget-section-images"
+    }), this.$widgetLogo.src = Ea, this.$wopenButton.replaceChildren(Object.assign(document.createElement('img'), { src: Ea, alt: '' })), this.$wopenButton.addEventListener("click", () => {
       this.open = !this.open;
-      if (!this.open) {
-        this.element.style.left = '';
-        this.element.style.right = '8px';
-        this.element.style.top = '';
-        return;
-      }
-      requestAnimationFrame(() => {
-        const panel = this.element;
-        const rect = panel.getBoundingClientRect();
-        panel.style.left = Math.min(Math.max(8, rect.left), Math.max(8, innerWidth - rect.width - 8)) + 'px';
-        panel.style.top = Math.min(Math.max(8, rect.top), Math.max(8, innerHeight - rect.height - 8)) + 'px';
-        panel.style.right = 'auto';
-      });
+      if (!this.open) this.positionLauncher();
     }), this.element.querySelector('.shark-check-updates').addEventListener('click', () => globalThis.macrosharkCheckUpdates?.()); this.$draw.addEventListener("click", () => {
       this.drawAndClickPaintWhenReady().catch(error => {
         this.status = error.message;
@@ -15835,17 +15873,13 @@ class jo extends ao {
       if (this.autoOverlayIntervalId || this.autoOverlayTickRunning) this.stopAutoOverlay();else if (!this.drawActionRunning) this.startAutoOverlay();
     }), this.$autoOverlayStop.addEventListener("click", () => {
       this.stopAutoOverlay();
-    }), this.installMobileQuickActions(), this.installFloatingPanels(), this.installSafetyControls(), this.installWorkspacePanels(), this.installReferencePreview(), this.element.querySelector('.shark-gallery-search').addEventListener('input', () => this.filterGallery()), this.applyImagesCollapsedPreference(), this.$imagesSection.addEventListener("toggle", () => {
-      if (this.persistImagesCollapsedPreference(!this.$imagesSection.open), this.refreshImagesCollapseText(), !this.$imagesSection.open || !this.imagesListDirty) return;
-      this.renderImagesList(), this.imagesListDirty = !1;
-    }), this.registerEvent(document, "keydown", this.handleKeyboard.bind(this), {
+    }), this.installMobileQuickActions(), this.installFloatingPanels(), this.installSafetyControls(), this.installWorkspacePanels(), this.installReferencePreview(), this.element.querySelector('.shark-gallery-search').addEventListener('input', () => this.filterGallery()), this.initializeImagesSection(), this.registerEvent(document, "keydown", this.handleKeyboard.bind(this), {
       passive: !1
     }), this.update(), this.syncOverlayVisibilityFromStorage(), this.loadAutoOverlayConfigFromStorage(), this.refreshAutoOverlayStatusText(), this.statusRefreshIntervalId = window.setInterval(() => {
       this.refreshAutoOverlayStatusText(), this.refreshProgress();
     }, 1000), this.open = !1, window.setTimeout(() => {}, 2500), console.log("[MACROSHARK][Widget] Widget mounted minimized");
   }
   addImage() {
-    this.$imagesSection.open = true;
     this.$addImage.scrollIntoView({
       block: 'center'
     });
@@ -15854,6 +15888,9 @@ class jo extends ao {
   installMobileQuickActions() {
     const title = this.element.querySelector('.title');
     title.append(this.$wopenButton);
+    this.$launcher = document.createElement('div');
+    this.$launcher.className = 'macroshark-launcher';
+    document.body.append(this.$launcher);
     const grid = this.element.querySelector('.shark-mini-grid');
     this.$miniGrid = grid;
     const make = (source, label, extraClass) => {
@@ -15869,8 +15906,16 @@ class jo extends ao {
     };
     this.$quickDraw = make(this.$draw, 'Dibujar', 'shark-mini-draw');
     this.$quickAuto = make(this.$autoOverlayStart, 'Iniciar AutoDraw', 'shark-mini-auto');
-    this.$canvasToggle = this.element.querySelector('.shark-canvas-toggle');
-    this.$canvasToggle.addEventListener('click', () => {
+    this.$quickCanvas = document.createElement('button');
+    this.$quickCanvas.type = 'button';
+    this.$quickCanvas.className = 'shark-mini-action shark-mini-canvas';
+    this.$quickCanvas.innerHTML = '<i class="fa-solid fa-images" aria-hidden="true"></i>';
+    this.$quickCanvas.addEventListener('click', () => {
+      this.canvasVisible = !this.canvasVisible;
+      this.syncCanvasPanel();
+    });
+    grid.append(this.$quickCanvas);
+    this.element.querySelector('.shark-open-canvas').addEventListener('click', () => {
       this.canvasVisible = !this.canvasVisible;
       this.syncCanvasPanel();
     });
@@ -15883,19 +15928,27 @@ class jo extends ao {
     this.canvasVisible = false;
     this.syncCanvasPanel();
     this.syncQuickPanel();
+    this.positionLauncher();
+    window.addEventListener('resize', () => this.positionLauncher());
+    window.setInterval(() => this.positionLauncher(), 1000);
   }
   syncCanvasPanel() {
     this.element.classList.toggle('shark-canvas-hidden', !this.canvasVisible);
-    this.$canvasToggle.setAttribute('aria-expanded', String(this.canvasVisible));
-    this.$canvasToggle.querySelector('span').textContent = this.canvasVisible ? 'Ocultar canvas' : 'Mostrar canvas';
-    this.$canvasToggle.classList.toggle('shark-running', this.canvasVisible);
+    const dockButton = this.element.querySelector('.shark-open-canvas');
+    dockButton.classList.toggle('shark-running', this.canvasVisible);
+    dockButton.setAttribute('aria-pressed', String(this.canvasVisible));
+    dockButton.querySelector('span').textContent = this.canvasVisible ? 'Ocultar canvas' : 'Canvas';
     this.$quickCanvas?.classList.toggle('shark-running', this.canvasVisible);
-    if (this.$quickCanvas) this.$quickCanvas.title = this.canvasVisible ? 'Ocultar canvas' : 'Mostrar canvas';
+    if (this.$quickCanvas) {
+      const label = this.canvasVisible ? 'Ocultar canvas' : 'Mostrar canvas';
+      this.$quickCanvas.title = label;
+      this.$quickCanvas.setAttribute('aria-label', label);
+      this.$quickCanvas.setAttribute('aria-expanded', String(this.canvasVisible));
+    }
     if (this.canvasVisible) requestAnimationFrame(() => this.placeFloatingCanvas());
   }
   installFloatingPanels() {
     const main = this.element;
-    const canvas = this.$imagesSection;
     const clamp = (value, min, max) => Math.min(Math.max(value, min), Math.max(min, max));
     const drag = (panel, handle) => {
       let start = null;
@@ -15943,9 +15996,8 @@ class jo extends ao {
     };
     drag(main, main.querySelector('.title'));
     drag(main, main.querySelector('.shark-mini-grid'));
-    drag(canvas, canvas.querySelector('.widget-section-summary'));
     window.addEventListener('resize', () => {
-      for (const panel of [main, canvas]) {
+      for (const panel of [main]) {
         if (panel === main && !this.open) {
           panel.style.left = '';
           panel.style.right = '8px';
@@ -15956,16 +16008,47 @@ class jo extends ao {
     });
   }
   placeFloatingCanvas() {
-    if (!this.canvasVisible || this.$imagesSection.style.left) return;
+    if (!this.canvasVisible) return;
     const canvas = this.$imagesSection;
-    canvas.style.left = Math.max(8, (innerWidth - canvas.offsetWidth) / 2) + 'px';
-    canvas.style.top = Math.max(8, (innerHeight - canvas.offsetHeight) / 2) + 'px';
+    canvas.style.removeProperty('left');
+    canvas.style.removeProperty('top');
+    canvas.style.removeProperty('right');
   }
   syncQuickPanel() {
     if (!this.$miniGrid) return;
     if (this.open) this.element.querySelector('.title').append(this.$wopenButton);
-    else this.$miniGrid.prepend(this.$wopenButton);
+    else this.$launcher.append(this.$wopenButton);
+    this.$launcher.hidden = this.open;
+    this.positionLauncher();
     this.syncActionButtons();
+  }
+  positionLauncher() {
+    if (!this.$launcher) return;
+    const button = this.findNativePaintButton();
+    const rect = button?.getBoundingClientRect();
+    const nearBottom = rect && rect.width > 0 && rect.height > 0 && rect.top > innerHeight * 0.4 && rect.bottom > innerHeight * 0.65;
+    let dockTop = nearBottom ? rect.top : innerHeight;
+    if (nearBottom) for (let parent = button.parentElement, depth = 0; parent && depth < 6; parent = parent.parentElement, depth++) {
+      const bounds = parent.getBoundingClientRect();
+      if (bounds.width > innerWidth * 0.55 && bounds.height > 90 && bounds.height < innerHeight * 0.55 && bounds.bottom > innerHeight - 80) dockTop = Math.min(dockTop, bounds.top);
+    }
+    this.element.style.setProperty('--shark-dock-bottom', Math.max(12, innerHeight - dockTop + 8) + 'px');
+    if (this.open) return;
+    const size = matchMedia('(max-width:620px)').matches ? 46 : 52;
+    const gap = 8;
+    let left = innerWidth / 2 + 145;
+    let top = innerHeight - size - 12;
+    if (nearBottom) {
+      left = rect.right + gap;
+      if (left + size > innerWidth - 8) left = rect.left - size - gap;
+      top = rect.top + (rect.height - size) / 2;
+      if (left < 8) {
+        left = Math.min(innerWidth - size - 8, rect.right - size);
+        top = rect.top - size - gap;
+      }
+    }
+    this.$launcher.style.left = Math.max(8, Math.min(left, innerWidth - size - 8)) + 'px';
+    this.$launcher.style.top = Math.max(8, Math.min(top, innerHeight - size - 8)) + 'px';
   }
   registerMobileFileInputs() {
     const input = this.$addImage;
@@ -16245,8 +16328,9 @@ class jo extends ao {
     }
   }
   update() {
-    if (this.refreshProgress(), this.imagesListDirty = !0, !this.$imagesSection.open) return;
-    this.renderImagesList(), this.imagesListDirty = !1;
+    this.refreshProgress();
+    this.renderImagesList();
+    this.imagesListDirty = false;
   }
   async enableAvailableImageColors(image, button) {
     button.disabled = true;
@@ -16284,7 +16368,7 @@ class jo extends ao {
 </button>
   <div class="shark-card-heading"><strong class="shark-card-name"></strong><span class="shark-card-size"></span></div>
   <div class="image-progress"><span class="image-progress-label"></span><progress max="100" value="0" aria-label="Progreso de imagen"></progress></div>
-  <div class="shark-image-settings"><label>Modo de pintado<select class="shark-card-strategy" aria-label="Modo de pintado de esta plantilla"></select></label><label>Opacidad <output class="shark-card-opacity-value"></output><input class="shark-card-opacity" type="range" min="0" max="100" aria-label="Opacidad de esta plantilla"></label><label><input class="shark-card-colors-order" type="checkbox"> Dibujar colores en orden</label><label><input class="shark-card-transparent" type="checkbox"> Pintar píxeles transparentes</label><label><input class="shark-card-available" type="checkbox"> Solo colores disponibles</label></div>
+  <div class="shark-image-settings"><label>Modo de pintado<select class="shark-card-strategy" aria-label="Modo de pintado de esta plantilla"></select></label><label>Opacidad <output class="shark-card-opacity-value"></output><input class="shark-card-opacity" type="range" min="0" max="100" aria-label="Opacidad de esta plantilla"></label><button class="shark-card-reset-size" type="button" title="Restablecer tamaño original">Restablecer tamaño</button><label><input class="shark-card-colors-order" type="checkbox"> Dibujar colores en orden</label><label><input class="shark-card-transparent" type="checkbox"> Pintar píxeles transparentes</label><label><input class="shark-card-available" type="checkbox"> Solo colores disponibles</label></div>
   <div class="image-controls">
     <button class="focus-map" title="Go to image position"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i></button>
     <button class="colors" title="Show colors"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
@@ -16316,6 +16400,14 @@ class jo extends ao {
         opacityValue.textContent = opacity.value + '%';
         l.$opacity.value = opacity.value;
         l.$opacity.dispatchEvent(new Event('input'));
+      });
+      const resetSize = i.querySelector('.shark-card-reset-size');
+      resetSize.disabled = !l.pixels.image?.naturalWidth;
+      resetSize.addEventListener('click', () => {
+        l.$resetSize.click();
+        l.updateTasks();
+        this.bot.updateTasks();
+        this.renderImagesList();
       });
       for (const [selector, original] of [['.shark-card-colors-order', l.$drawColorsInOrder], ['.shark-card-transparent', l.$drawTransparent], ['.shark-card-available', l.$skipUnavailable]]) {
         const control = i.querySelector(selector);
@@ -16410,25 +16502,10 @@ class jo extends ao {
   applyLocaleToUI(o) {
     uo(o), U(this.element);
     for (let a = 0; a < this.bot.images.length; a++) this.bot.images[a].applyLocale();
-    this.refreshOverlayToggleText(), this.refreshImagesCollapseText(), this.refreshAutoOverlayStatusText();
+    this.refreshOverlayToggleText(), this.refreshAutoOverlayStatusText();
   }
-  applyImagesCollapsedPreference() {
-    let o = this.readImagesCollapsedPreference();
-    if (this.$imagesSection.open = !o, this.refreshImagesCollapseText(), this.$imagesSection.open && this.imagesListDirty) this.renderImagesList(), this.imagesListDirty = !1;
-  }
-  readImagesCollapsedPreference() {
-    let o = localStorage.getItem(aa);
-    if (o === "true") return !0;
-    if (o === "false") return !1;
-    return wo().imagesCollapsed ?? !1;
-  }
-  persistImagesCollapsedPreference(o) {
-    localStorage.setItem(aa, String(o)), $({
-      imagesCollapsed: o
-    });
-  }
-  refreshImagesCollapseText() {
-    this.$imagesCollapseState.textContent = this.$imagesSection.open ? f("widgetImagesCollapse") : f("widgetImagesExpand");
+  initializeImagesSection() {
+    if (this.imagesListDirty) this.renderImagesList(), this.imagesListDirty = false;
   }
   openGuideModal() {
     if (this.guideDialog?.isConnected) {
@@ -16439,17 +16516,15 @@ class jo extends ao {
     dialog.className = 'macroshark-guide';
     dialog.setAttribute('aria-labelledby', 'macroshark-guide-title');
     dialog.innerHTML = "<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><s\
-mall>Plus.27 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
+mall>Plus.28 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
 >×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Importa una imagen, colócala en el mapa, seleccio\
-na los colores disponibles y elige cómo dibujarla.</p>\n<details open><summary>Primeros pasos</summary><ol><li\
+na los colores disponibles y elige cómo dibujarla.</p>\n<p>Selecciona una tarjeta de Canvas para cambiar el modo de pintado, la opacidad, los colores y el tamaño de esa imagen. El panel que aparecía debajo de la plantilla en el mapa se retiró.</p>\n<details open><summary>Primeros pasos</summary><ol><li\
 >Pulsa <b>Importar Imagen</b> y elige una imagen o una plantilla .oki/.kgm/.wplace. Las plantillas .wplace conservan su posición guardada en el mapa.</li><li>Abre el candado de\
  la imagen para moverla con el ratón o con un dedo. Ciérralo al terminar: queda anclada al mapa.</li><li>Pulsa\
  el botón de verificación de su tarjeta para activar solo los colores que tienes en tu cuenta.</li><li>Abre lo\
 s ajustes de estrategia para elegir el recorrido de pintado.</li><li>Elige el límite de píxeles y pulsa <b>Dib\
 ujar</b>. Activa <b>Pintar automáticamente</b> si quieres que el macro confirme la tanda; apagado, solo prepar\
-a los píxeles.</li></ol></details>\n<details><summary>Panel principal y canvas</summary><dl>\n<dt>☰ Menú</\
-dt><dd>Minimiza o abre el panel. La barra reducida queda junto a los controles laterales de WPlace: abrir, dibujar e iniciar o detener AutoDraw. Arrastra la barra o la cabecera de cada panel para moverlos; se ajustan al borde.\
- El botón Mostrar canvas abre o cierra el panel independiente de imágenes.</dd>\n<dt>↻ Actualizaciones</dt><dd>Consulta ahora la versión publicada y muestra el aviso si hay una nueva.</dd><dt>? Guía</dt><dd>Abre esta ayuda. El botón × la cierra; en PC también puedes usar E\
+a los píxeles.</li></ol></details>\n<details><summary>Panel principal y canvas</summary><dl>\n<dt>🐟 Tiburón</dt><dd>Abre o minimiza la barra principal junto al botón Pintar de WPlace. Al abrirse aparecen las funciones de MacroShark en una barra de pintura adaptable. Los tres accesos de la derecha permiten Dibujar, AutoDraw y abrir Canvas; la X cierra Canvas. La barra principal se mantiene sobre la paleta de WPlace y Canvas permanece centrado.</dd>\n<dt>↻ Actualizaciones</dt><dd>Consulta ahora la versión publicada y muestra el aviso si hay una nueva.</dd><dt>? Guía</dt><dd>Abre esta ayuda. El botón × la cierra; en PC también puedes usar E\
 sc.</dd>\n<dt>Dibujar / Detener dibujo · pluma</dt><dd>Pulsa otra vez mientras trabaja para detenerlo. Los píx\
 eles ya preparados se conservan. Prepara los píxeles pendientes según el límite elegido y las cargas disponibl\
 es. Si Pintar automáticamente está activado, también confirma la tanda.</dd>\n<dt>Pintar automáticamente · var\
@@ -16978,7 +17053,11 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
     }
   }
   findNativePaintButton() {
-    return ["button.btn.btn-primary.btn-lg.sm\\:btn-xl.relative", "button.btn.btn-primary.btn-lg.relative", "button.btn.btn-primary.btn-lg.relative.z-30", "button.btn.btn-primary.btn-lg.sm\\:btn-xl.relative.z-30", "div.absolute.bottom-0.left-1\\/2.-translate-x-1\\/2 button.btn.btn-primary"].flatMap(l => Array.from(document.querySelectorAll(l))).find(l => /pintar|paint/i.test(l.textContent));
+    return ["button.btn.btn-primary.btn-lg.sm\\:btn-xl.relative", "button.btn.btn-primary.btn-lg.relative", "button.btn.btn-primary.btn-lg.relative.z-30", "button.btn.btn-primary.btn-lg.sm\\:btn-xl.relative.z-30", "div.absolute.bottom-0.left-1\\/2.-translate-x-1\\/2 button.btn.btn-primary"].flatMap(l => Array.from(document.querySelectorAll(l))).find(button => {
+      if (!/pintar|paint/i.test(button.textContent)) return false;
+      const rect = button.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && getComputedStyle(button).visibility !== 'hidden';
+    });
   }
   triggerNativePaintClick(o) {
     o.dispatchEvent(new PointerEvent("pointerdown", {
@@ -18781,7 +18860,7 @@ function macrosharkStartupError(error) {
 }
 const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/latest.json';
 const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js';
-const MACROSHARK_CURRENT_VERSION = 'Plus.27';
+const MACROSHARK_CURRENT_VERSION = 'Plus.28';
 
 function macrosharkVersionNumber(value) {
   const match = /^Plus\.(\d+)$/.exec(value);
@@ -18884,8 +18963,8 @@ try {
     const shared = globalThis.unsafeWindow ?? globalThis;
     if (!shared.__macrosharkBooting && !root?.hasAttribute('data-macroshark-active') && !document.querySelector('.wwidget')) {
       shared.__macrosharkBooting = true;
-      if (root) root.setAttribute('data-macroshark-active', 'Plus.27');
-      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.27'), { once: true });
+      if (root) root.setAttribute('data-macroshark-active', 'Plus.28');
+      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.28'), { once: true });
       ll();
       globalThis.macroshark = new ba();
       macrosharkStartUpdateChecks();
