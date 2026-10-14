@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.33
+// @version      Plus.34.1
 // @description  Macro local para PC y móvil con controles táctiles y filtro de colores disponibles
 // @author       Ike
 // @license      MPL-2.0
