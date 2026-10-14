@@ -1,6 +1,6 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión publicada: **Plus.28**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.32**.
 
 ## Instalación y actualizaciones
 
@@ -8,9 +8,38 @@ Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShar
 
 Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace y posponerlo 24 horas. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.28 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace. Al detectar una versión nueva, bloquea las funciones de pintado hasta actualizar; si cierras el aviso, el botón del macro se convierte en acceso para volver a abrirlo. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.32 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
 
 ## Nota de actualizaciones
+
+### Plus.32
+
+- Al volver a abrir la barra de colores tras una pausa, vuelve a consultar cuenta y mapa automáticamente; ya no aparece «Reanudar tras revisar». Las verificaciones y esperas pendientes siguen respetándose, y AutoDraw no se reinicia por sí solo.
+- Cada nueva tanda lee las teselas después de abrir la paleta. Los píxeles preparados que aún no se confirmaron siguen protegidos contra repintado, pero ya no suman al avance como si estuvieran pintados.
+- Retira los mensajes de estado del panel principal y el botón Edición de Canvas. La ventana de Canvas queda por encima de los accesos laterales cuando está abierta para que estos no tapen sus controles.
+- Los botones activos usan el color actual de «Pintar» de WPlace, tanto en el tema azul como en el morado.
+
+### Plus.31
+
+- El panel principal muestra cuatro botones: Velocidad de pintado, Confirmar pintado, Configurar AutoDraw y Capturar imagen. Dibujar, AutoDraw y Canvas permanecen en la columna lateral; Edición está dentro de Canvas y Configurar pintado en la cabecera.
+- Velocidad de pintado alterna entre x1, x2 y x4. Ajusta la espera entre píxeles preparados a 40, 20 o 10 ms, respectivamente; no altera la recarga de píxeles, las esperas de confirmación ni garantiza que WPlace acepte el ritmo. x1 muestra una nota de prudencia sin prometer invisibilidad.
+- Confirmar pintado queda activo al instalar Plus.31 por primera vez, incluso al actualizar desde una versión anterior. Al terminar Dibujar confirma la tanda automáticamente; desactivado, deja los píxeles preparados. Después se conserva la elección del usuario. AutoDraw mantiene su confirmación automática.
+- Capturar imagen abre un panel centrado. En móvil y PC permite tocar los píxeles A y B en el mapa, muestra sus coordenadas, carga una vista previa y ofrece guardar el PNG mediante el menú de compartir compatible o descarga.
+- El tiburón se coloca sobre Canvas, Dibujar y AutoDraw en una columna vertical alineada con los controles laterales de WPlace. Los avisos ordinarios pasan al centro superior para no cubrir esa columna.
+
+### Plus.30
+
+- En móvil, el tiburón minimizado se coloca encima de «Pintar» cuando la paleta está cerrada. Con la paleta abierta aparece a la izquierda de los controles de su cabecera, sin tapar la información.
+- Corrige el botón que quedaba como una X tras minimizar: el tiburón vuelve a mostrarse siempre que el panel esté cerrado.
+- Los accesos rápidos de Canvas, Dibujar y AutoDraw se alinean debajo del último botón lateral de WPlace. Adoptan su tamaño, los colores del tema y la forma redonda o cuadrada del modo visual activo.
+
+### Plus.29
+
+- El botón del tiburón usa el color de «Pintar» de WPlace al estar minimizado. Con la paleta abierta se integra como control pequeño en su barra; al expandir MacroShark se convierte en una X para cerrarlo.
+- El acceso rápido a Canvas aparece arriba de Dibujar y AutoDraw.
+- Los píxeles preparados pero aún sin confirmar se conservan al leer de nuevo el mapa; así una tanda interrumpida continúa sin volver a prepararlos. Se descartan si la paleta visible indica que no hay píxeles pendientes y se resincronizan tras la confirmación.
+- Los avisos ordinarios desaparecen en diez segundos. El aviso de actualización permanece hasta cerrarlo y, mientras exista una versión más nueva, las funciones de pintado quedan bloqueadas.
+- Reduce el logo incrustado de 863 KB a 23 KB sin cambiar su diseño. El script completo pasa de aproximadamente 1,5 MB a 0,39 MB para facilitar su carga en Stay y Safari.
 
 ### Plus.28
 
