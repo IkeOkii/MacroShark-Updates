@@ -1,6 +1,6 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.32**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.33**.
 
 ## Instalación y actualizaciones
 
@@ -8,9 +8,15 @@ Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShar
 
 Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace. Al detectar una versión nueva, bloquea las funciones de pintado hasta actualizar; si cierras el aviso, el botón del macro se convierte en acceso para volver a abrirlo. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.32 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace. Al detectar una versión nueva, bloquea las funciones de pintado hasta actualizar; si cierras el aviso, el botón del macro se convierte en acceso para volver a abrirlo. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.33 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
 
 ## Nota de actualizaciones
+
+### Plus.33
+
+- La cabecera de Canvas muestra el tiburón, MacroShark y el nombre del panel. En el detalle, las seis acciones restantes ocupan dos filas debajo de la vista previa; se retiran los botones de subir, bajar y restablecer tamaño.
+- Añade un lápiz junto al nombre para renombrar cada plantilla y guardar el nombre con sus ajustes.
+- La imagen sobre el mapa muestra ocho puntos de ajuste en las esquinas y los lados, compatibles con ratón y tacto. Se conserva su proporción al cambiar el tamaño y se oculta la antigua barra inferior.
 
 ### Plus.32
 
