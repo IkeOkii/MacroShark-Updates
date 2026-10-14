@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.32
+// @version      Plus.33
 // @description  Macro local para PC y móvil con controles táctiles y filtro de colores disponibles
 // @author       Ike
 // @license      MPL-2.0
@@ -943,10 +943,14 @@ var Yo = `<div class="wtopbar">\r
     </label>\r
     <div class="preview-dialog-list"></div>\r
   </dialog>\r
-  <div class="resize n"></div>\r
-  <div class="resize e"></div>\r
-  <div class="resize s"></div>\r
-  <div class="resize w"></div>\r
+  <button class="resize n" type="button" aria-label="Ajustar tamaño desde arriba"></button>\r
+  <button class="resize ne" type="button" aria-label="Ajustar tamaño desde la esquina superior derecha"></button>\r
+  <button class="resize e" type="button" aria-label="Ajustar tamaño desde la derecha"></button>\r
+  <button class="resize se" type="button" aria-label="Ajustar tamaño desde la esquina inferior derecha"></button>\r
+  <button class="resize s" type="button" aria-label="Ajustar tamaño desde abajo"></button>\r
+  <button class="resize sw" type="button" aria-label="Ajustar tamaño desde la esquina inferior izquierda"></button>\r
+  <button class="resize w" type="button" aria-label="Ajustar tamaño desde la izquierda"></button>\r
+  <button class="resize nw" type="button" aria-label="Ajustar tamaño desde la esquina superior izquierda"></button>\r
 </div>\r
 `;
 function sharkExactMouseMove(x, y) {
@@ -1663,7 +1667,7 @@ class S extends ao {
     }), this.registerEvent(this.$export, "click", () => {
       this.export();
     }), this.registerEvent(this.$topbar, "mousedown", this.moveStart.bind(this)), this.registerEvent(this.$canvas, "mousedown", this.moveStart.bind(this)), this.registerEvent(document, "mouseup", this.moveStop.bind(this)), this.registerEvent(document, "mousemove", this.move.bind(this));
-    for (let t of this.element.querySelectorAll(".resize")) this.registerEvent(t, "mousedown", this.resizeStart.bind(this));
+    this.installResizeHandles();
     this.installMobileImageDrag();
     this.update(), this.updateColors();
   }
@@ -2399,17 +2403,75 @@ class S extends ao {
     } else if (this.moveInfo.height !== void 0) this.pixels.height = Math.max(1, l + this.moveInfo.height);
     this.update(), H(this.bot);
   }
-  resizeStart(o) {
-    if (this.lock || o.button !== 0) return;
-    o.preventDefault(), o.stopPropagation(), this.moveInfo = {
-      clientX: o.clientX,
-      clientY: o.clientY
+  installResizeHandles() {
+    const select = () => {
+      for (const image of this.bot.images) image.element.classList.remove('shark-resize-selected');
+      this.element.classList.add('shark-resize-selected');
     };
-    let a = o.target;
-    if (a.classList.contains("n")) this.moveInfo.height = this.pixels.height, this.moveInfo.globalY = this.position.globalY;
-    if (a.classList.contains("e")) this.moveInfo.width = this.pixels.width;
-    if (a.classList.contains("s")) this.moveInfo.height = this.pixels.height;
-    if (a.classList.contains("w")) this.moveInfo.width = this.pixels.width, this.moveInfo.globalX = this.position.globalX;
+    this.registerEvent(this.$canvas, 'pointerdown', select);
+    for (const handle of this.element.querySelectorAll('.resize')) {
+      this.registerEvent(handle, 'pointerdown', event => {
+        if (this.lock || !event.isPrimary || event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        select();
+        const direction = [...handle.classList].find(name => /^(?:n|ne|e|se|s|sw|w|nw)$/.test(name));
+        const scale = this.position.pixelSize;
+        if (!direction || !Number.isFinite(scale) || scale <= 0) return;
+        const drag = {
+          id: event.pointerId, direction, scale,
+          clientX: event.clientX, clientY: event.clientY,
+          x: this.position.globalX, y: this.position.globalY,
+          width: this.pixels.width, height: this.pixels.height
+        };
+        this.resizeGesture = drag;
+        handle.setPointerCapture?.(event.pointerId);
+      }, { passive: false });
+      this.registerEvent(handle, 'pointermove', event => {
+        const drag = this.resizeGesture;
+        if (!drag || drag.id !== event.pointerId) return;
+        event.preventDefault();
+        const dx = (event.clientX - drag.clientX) / drag.scale;
+        const dy = (event.clientY - drag.clientY) / drag.scale;
+        const horizontal = drag.direction.includes('w') ? -dx : dx;
+        const vertical = (drag.direction.includes('n') ? -dy : dy) * this.pixels.resolution;
+        const corner = drag.direction.length === 2;
+        const delta = corner ? Math.abs(horizontal) >= Math.abs(vertical) ? horizontal : vertical
+          : /[ew]/.test(drag.direction) ? horizontal : vertical;
+        const maximum = Math.max(drag.width, Math.floor(Math.sqrt(16000000 * this.pixels.resolution)));
+        const width = Math.max(1, Math.min(maximum, Math.round(drag.width + delta)));
+        const height = Math.max(1, Math.round(width / this.pixels.resolution));
+        this.pixels.width = width;
+        this.position.globalX = drag.direction.includes('w') ? drag.x + drag.width - width
+          : drag.direction.includes('e') ? drag.x : drag.x + Math.round((drag.width - width) / 2);
+        this.position.globalY = drag.direction.includes('n') ? drag.y + drag.height - height
+          : drag.direction.includes('s') ? drag.y : drag.y + Math.round((drag.height - height) / 2);
+        this.updatePlacement();
+      }, { passive: false });
+      const finish = event => {
+        const drag = this.resizeGesture;
+        if (!drag || drag.id !== event.pointerId) return;
+        event.preventDefault();
+        event.stopPropagation();
+        this.resizeGesture = null;
+        if (drag.width === this.pixels.width && drag.x === this.position.globalX && drag.y === this.position.globalY) return;
+        this.position.updateAnchor();
+        this.pixels.update();
+        this.updateColors();
+        this.update();
+        H(this.bot, true);
+        this.bot.readMap().then(() => {
+          if (!this.bot.images.includes(this)) return;
+          this.bot.updateTasks();
+          this.bot.widget.update();
+        }).catch(error => {
+          console.error('[MacroShark] No se pudo actualizar el mapa tras redimensionar', error);
+          this.bot.widget.status = 'No se pudo actualizar el mapa tras cambiar el tamaño. Vuelve a intentarlo antes de pintar.';
+        });
+      };
+      this.registerEvent(handle, 'pointerup', finish, { passive: false });
+      this.registerEvent(handle, 'pointercancel', finish, { passive: false });
+    }
   }
   export() {
     let o = document.createElement("a");
@@ -5163,6 +5225,39 @@ html[data-game-ui] .macroshark-capture-panel,html[data-game-ui] .macroshark-capt
 .macroshark-quick-rail .shark-mini-grid>button:disabled{opacity:.45;cursor:not-allowed}
 html[data-game-ui] .macroshark-quick-rail .shark-mini-grid>button{border:2px solid var(--ms-border);border-radius:2px;box-shadow:3px 3px 0 rgb(0 0 0 / 40%)}
 .wwidget:not(.shark-canvas-hidden){z-index:1005}
+/* Plus.33: Canvas branding and a compact, balanced image detail. */
+.wwidget .shark-canvas-brand{display:flex;align-items:center;gap:9px;min-width:0;margin-right:auto}
+.wwidget .shark-canvas-brand img{width:34px;height:34px;object-fit:contain;flex:none}
+.wwidget .shark-canvas-brand .widget-section-title{margin:0!important;white-space:nowrap}
+.wwidget .shark-canvas-brand-name{font-size:15px;font-weight:800;white-space:nowrap}
+.wwidget .shark-gallery-count{margin-right:0}
+.wwidget .shark-detail-active .preview{grid-row:2!important;min-height:170px;max-height:230px}
+.wwidget .shark-detail-active .image-controls{grid-column:1!important;grid-row:3/6!important;align-self:start;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px}
+.wwidget .shark-detail-active .image-controls button{min-height:38px!important}
+.wwidget .shark-detail-active .shark-card-heading{justify-content:flex-start}
+.wwidget .shark-detail-active .shark-card-name{flex:0 1 auto}
+.wwidget .shark-detail-active .shark-card-size{margin-left:auto}
+.wwidget .shark-card-rename{display:none;flex:none;align-items:center;justify-content:center;width:30px;min-height:30px!important;padding:0!important}
+.wwidget .shark-detail-active .shark-card-rename{display:flex}
+.wwidget .shark-card-name-input{box-sizing:border-box;flex:1;min-width:0;max-width:100%;padding:5px 7px;font:inherit}
+.wwidget .shark-card-name-input[hidden],.wwidget .shark-card-name[hidden],.wwidget .shark-card-rename[hidden]{display:none!important}
+/* WPlace-style resize points: a large touch target around each small circle. */
+.wimage>.wtopbar,.wimage .wrapper>.wform{display:none!important}
+.wimage .wrapper>.resize{position:absolute;z-index:4;box-sizing:border-box;width:28px;height:28px;min-width:28px;min-height:28px;margin:0;padding:0;border:0;background:transparent;opacity:0;pointer-events:none;touch-action:none;user-select:none;transform:translate(-50%,-50%)}
+.wimage .wrapper>.resize::after{content:'';position:absolute;inset:6px;border:2px solid #65a8ff;border-radius:50%;background:#f8fbff;box-shadow:0 1px 5px rgb(0 0 0 / 65%)}
+.wimage.shark-resize-selected .wrapper>.resize,.wimage:hover .wrapper>.resize{opacity:1;pointer-events:auto}
+.wimage .wrapper>.resize.no-pointer-events{opacity:0!important;pointer-events:none!important}
+.wimage .wrapper>.resize.n{top:0;left:50%;right:auto;bottom:auto;cursor:ns-resize}
+.wimage .wrapper>.resize.ne{top:0;left:100%;right:auto;bottom:auto;cursor:nesw-resize}
+.wimage .wrapper>.resize.e{top:50%;left:100%;right:auto;bottom:auto;cursor:ew-resize}
+.wimage .wrapper>.resize.se{top:100%;left:100%;right:auto;bottom:auto;cursor:nwse-resize}
+.wimage .wrapper>.resize.s{top:100%;left:50%;right:auto;bottom:auto;cursor:ns-resize}
+.wimage .wrapper>.resize.sw{top:100%;left:0;right:auto;bottom:auto;cursor:nesw-resize}
+.wimage .wrapper>.resize.w{top:50%;left:0;right:auto;bottom:auto;cursor:ew-resize}
+.wimage .wrapper>.resize.nw{top:0;left:0;right:auto;bottom:auto;cursor:nwse-resize}
+@media(max-width:700px){.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .image-controls{grid-column:1!important;grid-row:auto!important}.wwidget .shark-detail-active .image-controls{grid-template-columns:repeat(3,minmax(0,1fr))!important}.wwidget .shark-canvas-brand-name{font-size:13px}.wwidget .shark-canvas-brand img{width:28px;height:28px}}
+@media(max-width:420px){.wwidget .shark-canvas-brand{gap:5px}.wwidget .shark-canvas-brand-name{font-size:12px}.wwidget .shark-canvas-brand .widget-section-title{font-size:13px}}
+html[data-game-ui] .wimage .wrapper>.resize::after{border-radius:2px;box-shadow:2px 2px 0 rgb(0 0 0 / 60%)}
 `;
 class mo extends Error {
   name = "macrosharkError";
@@ -5320,7 +5415,7 @@ var yo = `<button class="wopen-button" aria-label="Toggle widget">\r
 <div class="shark-settings-storage" hidden><button class="draw" disabled><i class="fa-solid fa-pen-nib"></i><span>Dibujar</span></button><button class="autooverlay-start"><i class="fa-solid fa-play"></i><span>Iniciar AutoDraw</span></button><button class="shark-open-canvas" type="button"><i class="fa-solid fa-images" aria-hidden="true"></i><span>Canvas</span></button><div class="shark-paint-settings"><button class="draw-and-paint" disabled type="button" aria-pressed="false"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Pintar automáticamente</span><span class="shark-auto-state">Apagado</span></button><label class="shark-pixel-limit">Píxeles por tanda: <output class="shark-pixel-value">Todos disponibles</output><input class="shark-pixel-range" type="range" min="1" max="1" value="1" step="1" aria-label="Píxeles por tanda"></label>\r<label class="shark-random-label"><input class="shark-random-quantity" type="checkbox"> Aleatorizar cantidad</label><p class="shark-random-hint">Desactivado: usa el límite elegido.</p></div></div>
 <section class="widget-section widget-section-images">
     <div class="widget-section-summary">
-      <strong class="widget-section-title">Canvas</strong><span class="shark-gallery-count"></span>
+      <div class="shark-canvas-brand"><img class="shark-canvas-logo" alt="" aria-hidden="true"><strong class="shark-canvas-brand-name">MacroShark</strong><strong class="widget-section-title">Canvas</strong></div><span class="shark-gallery-count"></span>
       <button type="button" class="toggle-overlay shark-overlay-compact" title="Ocultar/mostrar overlays" aria-label="Ocultar/mostrar overlays"><i class="fa-solid fa-layer-group"></i></button><button type="button" class="macroshark-reference-toggle" aria-pressed="false" title="Referencia visual para pintar a mano"><span>Vista previa</span></button>
       <button class="shark-hide-canvas" type="button" title="Ocultar panel de imágenes" aria-label="Ocultar panel de imágenes"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
@@ -5429,7 +5524,7 @@ class jo extends ao {
       $autoOverlayStatus: ".autooverlay-status",
       $images: ".images",
       $imagesSection: ".widget-section-images"
-    }), this.$widgetLogo.src = Ea, this.$wopenButton.replaceChildren(Object.assign(document.createElement('img'), { src: Ea, alt: '' })), this.$wopenButton.addEventListener("click", () => {
+    }), this.$widgetLogo.src = Ea, this.element.querySelector('.shark-canvas-logo').src = Ea, this.$wopenButton.replaceChildren(Object.assign(document.createElement('img'), { src: Ea, alt: '' })), this.$wopenButton.addEventListener("click", () => {
       if (this.updateRequired) {
         macrosharkShowUpdate(this.updateRequired);
         return;
@@ -6105,9 +6200,9 @@ class jo extends ao {
       o.append(i), i.className = "image shark-gallery-card", i.innerHTML = `<button class="shark-detail-back" type="button" aria-label="Volver a canvas">← Volver</button><button class="preview" title="Abrir opciones de esta plantilla">
   <img src="${l.pixels.image.src}" alt="Image preview">
 </button>
-  <div class="shark-card-heading"><strong class="shark-card-name"></strong><span class="shark-card-size"></span></div>
+  <div class="shark-card-heading"><strong class="shark-card-name"></strong><input class="shark-card-name-input" type="text" maxlength="80" aria-label="Nuevo nombre de la plantilla" hidden><button class="shark-card-rename" type="button" title="Cambiar nombre" aria-label="Cambiar nombre de la plantilla"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></button><span class="shark-card-size"></span></div>
   <div class="image-progress"><span class="image-progress-label"></span><progress max="100" value="0" aria-label="Progreso de imagen"></progress></div>
-  <div class="shark-image-settings"><label>Modo de pintado<select class="shark-card-strategy" aria-label="Modo de pintado de esta plantilla"></select></label><label>Opacidad <output class="shark-card-opacity-value"></output><input class="shark-card-opacity" type="range" min="0" max="100" aria-label="Opacidad de esta plantilla"></label><button class="shark-card-reset-size" type="button" title="Restablecer tamaño original">Restablecer tamaño</button><label><input class="shark-card-colors-order" type="checkbox"> Dibujar colores en orden</label><label><input class="shark-card-transparent" type="checkbox"> Pintar píxeles transparentes</label><label><input class="shark-card-available" type="checkbox"> Solo colores disponibles</label></div>
+  <div class="shark-image-settings"><label>Modo de pintado<select class="shark-card-strategy" aria-label="Modo de pintado de esta plantilla"></select></label><label>Opacidad <output class="shark-card-opacity-value"></output><input class="shark-card-opacity" type="range" min="0" max="100" aria-label="Opacidad de esta plantilla"></label><label><input class="shark-card-colors-order" type="checkbox"> Dibujar colores en orden</label><label><input class="shark-card-transparent" type="checkbox"> Pintar píxeles transparentes</label><label><input class="shark-card-available" type="checkbox"> Solo colores disponibles</label></div>
   <div class="image-controls">
     <button class="focus-map" title="Go to image position"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i></button>
     <button class="colors" title="Show colors"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
@@ -6115,11 +6210,40 @@ class jo extends ao {
     <button class="available-colors" title="Activar solo colores disponibles en mi cuenta" aria-label="Activar solo colores disponibles en mi cuenta"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></button>
     <button class="download" title="Download settings"><i class="fa-solid fa-download" aria-hidden="true"></i></button>
     <button class="delete" title="Delete image"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
-    <button class="up" title="Move up" ${a === 0 ? "disabled" : ""}><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
-    <button class="down" title="Move down" ${a === this.bot.images.length - 1 ? "disabled" : ""}><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
   </div>`;
       i.querySelector('.shark-card-name').textContent = l.displayName || `Plantilla ${a + 1}`;
       i.querySelector('.shark-card-size').textContent = `${l.pixels.width} × ${l.pixels.height}`;
+      const rename = i.querySelector('.shark-card-rename');
+      const name = i.querySelector('.shark-card-name');
+      const nameInput = i.querySelector('.shark-card-name-input');
+      rename.addEventListener('click', () => {
+        nameInput.value = l.displayName || `Plantilla ${a + 1}`;
+        name.hidden = true;
+        nameInput.hidden = false;
+        rename.hidden = true;
+        nameInput.focus();
+        nameInput.select();
+      });
+      const finishRename = save => {
+        if (nameInput.hidden) return;
+        const next = nameInput.value.trim();
+        if (save && next) {
+          l.displayName = next;
+          name.textContent = next;
+          H(this.bot, true);
+        }
+        nameInput.hidden = true;
+        name.hidden = false;
+        rename.hidden = false;
+      };
+      nameInput.addEventListener('keydown', event => {
+        event.stopPropagation();
+        if (event.key === 'Enter' || event.key === 'Escape') {
+          event.preventDefault();
+          finishRename(event.key === 'Enter');
+        }
+      });
+      nameInput.addEventListener('blur', () => finishRename(true));
       i.classList.toggle('shark-detail-active', this.selectedGalleryImage === l);
       const strategy = i.querySelector('.shark-card-strategy');
       strategy.replaceChildren(...Array.from(l.$strategy.options, option => option.cloneNode(true)));
@@ -6139,14 +6263,6 @@ class jo extends ao {
         opacityValue.textContent = opacity.value + '%';
         l.$opacity.value = opacity.value;
         l.$opacity.dispatchEvent(new Event('input'));
-      });
-      const resetSize = i.querySelector('.shark-card-reset-size');
-      resetSize.disabled = !l.pixels.image?.naturalWidth;
-      resetSize.addEventListener('click', () => {
-        l.$resetSize.click();
-        l.updateTasks();
-        this.bot.updateTasks();
-        this.renderImagesList();
       });
       for (const [selector, original] of [['.shark-card-colors-order', l.$drawColorsInOrder], ['.shark-card-transparent', l.$drawTransparent], ['.shark-card-available', l.$skipUnavailable]]) {
         const control = i.querySelector(selector);
@@ -6186,10 +6302,6 @@ class jo extends ao {
         l.exportImage();
       }), i.querySelector(".delete").addEventListener("click", () => {
         l.destroy();
-      }), i.querySelector(".up").addEventListener("click", () => {
-        eo(this.bot.images, a, a - 1), this.update(), H(this.bot);
-      }), i.querySelector(".down").addEventListener("click", () => {
-        eo(this.bot.images, a, a + 1), this.update(), H(this.bot);
       });
     }
     this.$images.append(o);
@@ -6255,7 +6367,7 @@ class jo extends ao {
     dialog.className = 'macroshark-guide';
     dialog.setAttribute('aria-labelledby', 'macroshark-guide-title');
     dialog.innerHTML = "<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><s\
- mall>Plus.32 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
+ mall>Plus.33 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
 >×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Importa una imagen, colócala en el mapa, seleccio\
 na los colores disponibles y elige cómo dibujarla.</p>\n<p>Selecciona una tarjeta de Canvas para cambiar el modo de pintado, la opacidad, los colores y el tamaño de esa imagen. El panel que aparecía debajo de la plantilla en el mapa se retiró.</p>\n<details open><summary>Primeros pasos</summary><ol><li\
 >Pulsa <b>Importar Imagen</b> y elige una imagen o una plantilla .oki/.kgm/.wplace. Las plantillas .wplace conservan su posición guardada en el mapa.</li><li>Abre el candado de\
@@ -8635,7 +8747,7 @@ function macrosharkStartupError(error) {
 }
 const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/latest.json';
 const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js';
-const MACROSHARK_CURRENT_VERSION = 'Plus.32';
+const MACROSHARK_CURRENT_VERSION = 'Plus.33';
 
 function macrosharkVersionNumber(value) {
   const match = /^Plus\.(\d+)$/.exec(value);
@@ -8742,8 +8854,8 @@ try {
     const shared = globalThis.unsafeWindow ?? globalThis;
     if (!shared.__macrosharkBooting && !root?.hasAttribute('data-macroshark-active') && !document.querySelector('.wwidget')) {
       shared.__macrosharkBooting = true;
-      if (root) root.setAttribute('data-macroshark-active', 'Plus.32');
-      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.32'), { once: true });
+      if (root) root.setAttribute('data-macroshark-active', 'Plus.33');
+      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.33'), { once: true });
       ll();
       globalThis.macroshark = new ba();
       macrosharkStartUpdateChecks();
