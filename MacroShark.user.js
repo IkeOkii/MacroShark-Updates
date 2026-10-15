@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.34.1
+// @version      Plus.35
 // @description  Macro local para PC y móvil con controles táctiles y filtro de colores disponibles
 // @author       Ike
 // @license      MPL-2.0
@@ -93,8 +93,7 @@ function R(o) {
   return new Promise(a => setTimeout(a, o));
 }
 var G = "macroshark-settings",
-  Zo = [],
-  _ = "oki";
+  Zo = [];
 var Y = "macroshark:control-session-v5",
   Co = "macroshark:control-settings-v5",
   Go = "macroshark:local-device-id";
@@ -1541,11 +1540,23 @@ class S extends ao {
   colors;
   lock;
   displayName;
+  nativeOverlayId = '';
+  nativeOverlayRevision = 0;
+  paintSpeed = 1;
+  confirmPaint = true;
+  autoDrawConfig = null;
+  paintSelected = false;
   static PREVIEW_MASK_BASE_WIDTH = 96;
   static PREVIEW_MASK_BASE_HEIGHT = 96;
   static async fromJSON(o, a) {
     const image = new S(o, J.fromJSON(o, a.position), await q.fromJSON(o, a.pixels), a.strategy, a.opacity, a.drawTransparentPixels, a.drawColorsInOrder, a.skipUnavailableColors, a.colors, a.lock);
     image.displayName = typeof a.displayName === 'string' ? a.displayName : '';
+    image.nativeOverlayId = typeof a.nativeOverlayId === 'string' ? a.nativeOverlayId : '';
+    image.nativeOverlayRevision = Number.isFinite(a.nativeOverlayRevision) ? a.nativeOverlayRevision : 0;
+    image.paintSpeed = [1, 2, 4].includes(a.paintSpeed) ? a.paintSpeed : 1;
+    image.confirmPaint = a.confirmPaint !== false;
+    image.autoDrawConfig = a.autoDrawConfig && typeof a.autoDrawConfig === 'object' ? a.autoDrawConfig : null;
+    image.paintSelected = a.paintSelected === true;
     return image;
   }
   element = document.createElement("div");
@@ -1764,7 +1775,13 @@ class S extends ao {
       skipUnavailableColors: this.skipUnavailableColors,
       colors: this.colors,
       lock: this.lock,
-      displayName: this.displayName || ''
+      displayName: this.displayName || '',
+      nativeOverlayId: this.nativeOverlayId,
+      nativeOverlayRevision: this.nativeOverlayRevision,
+      paintSpeed: this.paintSpeed,
+      confirmPaint: this.confirmPaint,
+      autoDrawConfig: this.autoDrawConfig,
+      paintSelected: this.paintSelected
     };
   }
   updateTasks() {
@@ -2474,10 +2491,15 @@ class S extends ao {
     }
   }
   export() {
-    let o = document.createElement("a");
-    document.body.append(o), o.href = URL.createObjectURL(new Blob([JSON.stringify(this.toJSON())], {
-      type: "application/json"
-    })), o.download = `${this.pixels.width}x${this.pixels.height}.${_}`, o.click(), URL.revokeObjectURL(o.href), o.href = this.pixels.canvas.toDataURL("image/webp", 1), o.download = `${this.pixels.width}x${this.pixels.height}.webp`, o.click(), URL.revokeObjectURL(o.href), o.remove();
+    const record = macrosharkToWplace(this.pixels.canvas, this.displayName || 'MacroShark', this.position, this.opacity, this.lock);
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }));
+    link.href = url;
+    link.download = (this.displayName || 'MacroShark').replace(/[^\w\- ]/g, '_') + '.wplace';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 }
 var vo = `/* stylelint-disable declaration-no-important */
@@ -5225,7 +5247,7 @@ html[data-game-ui] .macroshark-capture-panel,html[data-game-ui] .macroshark-capt
 .macroshark-quick-rail .shark-mini-grid>button:disabled{opacity:.45;cursor:not-allowed}
 html[data-game-ui] .macroshark-quick-rail .shark-mini-grid>button{border:2px solid var(--ms-border);border-radius:2px;box-shadow:3px 3px 0 rgb(0 0 0 / 40%)}
 .wwidget:not(.shark-canvas-hidden){z-index:1005}
-/* Plus.33: Canvas branding and a compact, balanced image detail. */
+/* Plus.35: Canvas branding and a compact, balanced image detail. */
 .wwidget .shark-canvas-brand{display:flex;align-items:center;gap:9px;min-width:0;margin-right:auto}
 .wwidget .shark-canvas-brand img{width:34px;height:34px;object-fit:contain;flex:none}
 .wwidget .shark-canvas-brand .widget-section-title{margin:0!important;white-space:nowrap}
@@ -5258,6 +5280,39 @@ html[data-game-ui] .macroshark-quick-rail .shark-mini-grid>button{border:2px sol
 @media(max-width:700px){.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .image-controls{grid-column:1!important;grid-row:auto!important}.wwidget .shark-detail-active .image-controls{grid-template-columns:repeat(3,minmax(0,1fr))!important}.wwidget .shark-canvas-brand-name{font-size:13px}.wwidget .shark-canvas-brand img{width:28px;height:28px}}
 @media(max-width:420px){.wwidget .shark-canvas-brand{gap:5px}.wwidget .shark-canvas-brand-name{font-size:12px}.wwidget .shark-canvas-brand .widget-section-title{font-size:13px}}
 html[data-game-ui] .wimage .wrapper>.resize::after{border-radius:2px;box-shadow:2px 2px 0 rgb(0 0 0 / 60%)}
+/* Plus.35: one centered Canvas workspace with native-style progress and image actions. */
+.wwidget.wopen{width:0!important;height:0!important;min-height:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none}
+.wwidget.wopen.shark-subpanel-open{width:0!important;height:0!important;min-height:0!important}
+.wwidget.wopen>.title,.wwidget .shark-main-actions,.wwidget .shark-settings-storage,.wwidget.wopen>.wform>.wstatus{display:none!important}
+.wwidget.wopen>.wform{display:contents!important}
+.wwidget .widget-section-images{pointer-events:auto}
+.wwidget.wopen.shark-subpanel-open .widget-section-images>.shark-subpanel{position:absolute!important;inset:0!important;z-index:5;box-sizing:border-box;width:100%!important;height:100%!important;max-height:none!important;overflow:auto;border-radius:inherit!important;visibility:visible!important;pointer-events:auto!important}
+.wwidget .widget-section-images>.widget-section-summary{display:flex;align-items:center;gap:6px}
+.wwidget .widget-section-images .header-config{flex:none;width:32px;height:32px;min-height:32px;padding:0;font-size:17px}
+.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:minmax(0,1fr) 150px 180px;align-items:stretch;gap:8px}
+.wwidget .widget-section-images>.widget-image-actions>*{min-width:0;min-height:40px;box-sizing:border-box}
+.wwidget .widget-section-images .shark-sync-wplace{display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 9px;white-space:nowrap;font-size:12px}
+.wwidget .widget-section-images .macroshark-inline-file{width:100%;min-height:40px;grid-column:auto}
+.wwidget .images .shark-gallery-card.shark-paint-target{border-color:var(--ms-accent)!important;box-shadow:0 0 0 1px var(--ms-accent),3px 3px 0 color-mix(in srgb,var(--ms-ink) 15%,transparent)}
+.wwidget .shark-progress-track{display:flex;width:100%;height:6px;overflow:hidden;border-radius:var(--game-radius,9999px);background:var(--ms-control)}
+.wwidget .shark-progress-track span{display:block;height:100%;flex:none;transition:width .2s ease}
+.wwidget .shark-progress-done{background:#17a862}
+.wwidget .shark-progress-remaining{background:#e0475a}
+.wwidget .shark-gallery-card .image-progress{display:flex;flex-direction:column;gap:5px}
+.wwidget .shark-gallery-card .image-progress-label{font-size:11px;opacity:.55;font-variant-numeric:tabular-nums}
+.wwidget .shark-image-actions{display:none}
+.wwidget .shark-detail-active .shark-image-actions{display:grid;grid-column:1/-1;grid-row:2;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.wwidget .shark-image-actions button{min-height:40px;padding:6px;overflow:hidden;white-space:normal;font-size:11px;line-height:1.2}
+.wwidget .shark-image-actions button i{margin-right:4px}
+.wwidget .shark-detail-active .preview{grid-column:1!important;grid-row:3!important}
+.wwidget .shark-detail-active .shark-card-heading{grid-column:2!important;grid-row:3!important}
+.wwidget .shark-detail-active .image-progress{grid-column:2!important;grid-row:4!important}
+.wwidget .shark-detail-active .shark-image-settings{grid-column:2!important;grid-row:5!important}
+.wwidget .shark-detail-active .image-controls{grid-column:1!important;grid-row:4/6!important}
+.wwidget .shark-image-select[aria-pressed=true]{background:var(--ms-accent)!important;color:var(--ms-on-accent)!important;border-color:var(--ms-accent)!important}
+@media(max-width:700px){.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .widget-section-images>.widget-image-actions .shark-gallery-search{grid-column:1/-1}.wwidget .widget-section-images .shark-canvas-brand{margin-right:auto}.wwidget .shark-detail-active .shark-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .shark-detail-active .shark-image-select{grid-column:1/-1}.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .shark-card-heading,.wwidget .shark-detail-active .image-progress,.wwidget .shark-detail-active .shark-image-settings,.wwidget .shark-detail-active .image-controls{grid-column:1!important;grid-row:auto!important}}
+@media(max-width:420px){.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .widget-section-images>.widget-image-actions .shark-sync-wplace span{font-size:11px}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:wrap}.wwidget .widget-section-images .shark-canvas-brand{flex:1 1 100%}.wwidget .widget-section-images .header-config{width:30px;height:30px;min-height:30px}}
+html[data-game-ui] .wwidget .shark-progress-track,html[data-game-ui] .wwidget .shark-image-actions button{border-radius:2px!important}
 `;
 class mo extends Error {
   name = "macrosharkError";
@@ -5421,7 +5476,8 @@ var yo = `<button class="wopen-button" aria-label="Toggle widget">\r
     </div>
     <div class="widget-image-actions">\r
       <input class="shark-gallery-search" type="search" placeholder="Buscar plantillas" aria-label="Buscar plantillas">\r
-      <label class="macroshark-inline-file"><span>Importar Imagen</span><input class="add-image" type="file" accept="image/*,.oki,.kgm,.wplace" aria-label="Importar imagen o plantilla"></label>\r
+      <button class="shark-sync-wplace" type="button" title="Actualizar canvas desde WPlace"><i class="fa-solid fa-rotate" aria-hidden="true"></i><span>Actualizar canvas</span></button>\r
+      <label class="macroshark-inline-file"><span>Importar Imagen</span><input class="add-image" type="file" accept="image/*,.wplace" aria-label="Importar imagen o plantilla"></label>\r
       \r
     </div>\r
     <div class="images"></div>\r
@@ -5469,6 +5525,8 @@ class jo extends ao {
   set open(o) {
     if (!o) this.closeWorkspacePanel?.();
     if (o) this.element.classList.add("wopen");else this.element.classList.remove("wopen");
+    this.canvasVisible = !!o;
+    this.syncCanvasPanel?.();
     const a = this.$wopenButton;
     if (!a) return;
     a.setAttribute("aria-expanded", String(o)), a.setAttribute("aria-label", o ? f("mobileMinimize") : f("mobileShowPanel")), a.title = o ? f("mobileMinimize") : f("mobileShowPanel");
@@ -5524,7 +5582,7 @@ class jo extends ao {
       $autoOverlayStatus: ".autooverlay-status",
       $images: ".images",
       $imagesSection: ".widget-section-images"
-    }), this.$widgetLogo.src = Ea, this.element.querySelector('.shark-canvas-logo').src = Ea, this.$wopenButton.replaceChildren(Object.assign(document.createElement('img'), { src: Ea, alt: '' })), this.$wopenButton.addEventListener("click", () => {
+    }), this.$widgetLogo.src = Ea, this.element.querySelector('.shark-canvas-logo').src = Ea, this.$wopenButton.replaceChildren(Object.assign(document.createElement('img'), { src: Ea, alt: '' })), this.$imagesSection.querySelector('.widget-section-summary').insertBefore(this.element.querySelector('.shark-check-updates'), this.element.querySelector('.shark-hide-canvas')), this.$imagesSection.querySelector('.widget-section-summary').insertBefore(this.element.querySelector('.shark-open-paint'), this.element.querySelector('.shark-hide-canvas')), this.$imagesSection.querySelector('.widget-section-summary').insertBefore(this.$openConfig, this.element.querySelector('.shark-hide-canvas')), this.$wopenButton.addEventListener("click", () => {
       if (this.updateRequired) {
         macrosharkShowUpdate(this.updateRequired);
         return;
@@ -5562,7 +5620,7 @@ class jo extends ao {
       if (this.autoOverlayIntervalId || this.autoOverlayTickRunning) this.stopAutoOverlay();else if (!this.drawActionRunning) this.startAutoOverlay();
     }), this.$autoOverlayStop.addEventListener("click", () => {
       this.stopAutoOverlay();
-    }), this.installMobileQuickActions(), this.installFloatingPanels(), this.installSafetyControls(), this.installWorkspacePanels(), this.installReferencePreview(), this.element.querySelector('.shark-gallery-search').addEventListener('input', () => this.filterGallery()), this.initializeImagesSection(), this.registerEvent(document, "keydown", this.handleKeyboard.bind(this), {
+    }), this.installMobileQuickActions(), this.installFloatingPanels(), this.installSafetyControls(), this.installWorkspacePanels(), this.installReferencePreview(), this.element.querySelector('.shark-gallery-search').addEventListener('input', () => this.filterGallery()), this.element.querySelector('.shark-sync-wplace').addEventListener('click', event => this.syncNativeCanvas(event.currentTarget)), this.initializeImagesSection(), this.registerEvent(document, "keydown", this.handleKeyboard.bind(this), {
       passive: !1
     }), this.update(), this.syncOverlayVisibilityFromStorage(), this.loadAutoOverlayConfigFromStorage(), this.refreshAutoOverlayStatusText(), this.statusRefreshIntervalId = window.setInterval(() => {
       this.refreshAutoOverlayStatusText(), this.refreshProgress();
@@ -5604,19 +5662,16 @@ class jo extends ao {
     this.$quickCanvas.className = 'shark-mini-action shark-mini-canvas';
     this.$quickCanvas.innerHTML = '<i class="fa-solid fa-images" aria-hidden="true"></i>';
     this.$quickCanvas.addEventListener('click', () => {
-      this.canvasVisible = !this.canvasVisible;
-      this.syncCanvasPanel();
+      this.open = !this.open;
     });
     grid.prepend(this.$quickCanvas);
     this.element.querySelector('.shark-open-canvas').addEventListener('click', () => {
-      this.canvasVisible = !this.canvasVisible;
-      this.syncCanvasPanel();
+      this.open = !this.open;
     });
     this.element.querySelector('.shark-hide-canvas').addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
-      this.canvasVisible = false;
-      this.syncCanvasPanel();
+      this.open = false;
     });
     this.canvasVisible = false;
     this.syncCanvasPanel();
@@ -5796,6 +5851,74 @@ class jo extends ao {
     }
     if (this.bot.mobileInitializationError) throw this.bot.mobileInitializationError;
   }
+  async syncNativeCanvas(button) {
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      const records = await macrosharkReadNativeOverlays();
+      if (!records.length) {
+        this.showNativeNotice('WPlace no tiene Canvas locales importados en este navegador.');
+        return;
+      }
+      await this.waitForMobileReady();
+      await this.bot.updateColors();
+      let added = 0, updated = 0;
+      for (const record of records) {
+        const old = this.bot.images.find(image => image.nativeOverlayId === record.id);
+        const revision = Number(record.updatedAt) || 0;
+        if (old && old.nativeOverlayRevision === revision) continue;
+        const template = macrosharkParseWplace(JSON.stringify(record));
+        const image = new Image();
+        const loaded = Z(image, ['load'], ['error']);
+        image.src = template.url;
+        await loaded;
+        let position;
+        if (template.position) position = new J(this.bot, template.position.x, template.position.y);
+        else {
+          const screen = this.defaultImageScreenPosition();
+          const projection = this.bot.getMapProjection?.();
+          if (projection && [projection.scale, projection.worldX, projection.worldY, projection.screenX, projection.screenY].every(Number.isFinite) && projection.scale > 0) {
+            position = new J(this.bot, Math.round(projection.worldX + (screen.x - projection.screenX) / projection.scale), Math.round(projection.worldY + (screen.y - projection.screenY) / projection.scale));
+          } else {
+            await this.waitForStableViewportProjection();
+            position = J.fromScreenPosition(this.bot, screen);
+          }
+        }
+        const canvas = sharkSourceCanvas(image, template.displayWidth);
+        image.src = '';
+        const next = new S(this.bot, position, new q(this.bot, canvas), old?.strategy, old?.opacity ?? template.opacity, old?.drawTransparentPixels, old?.drawColorsInOrder, old?.skipUnavailableColors ?? true, [], old?.lock ?? template.locked);
+        if (old) {
+          const disabled = new Set(old.colors.filter(color => color.disabled).map(color => color.realColor));
+          for (const color of next.colors) color.disabled = disabled.has(color.realColor);
+          next.updateColors();
+        }
+        next.displayName = record.name || old?.displayName || 'Canvas de WPlace';
+        next.nativeOverlayId = record.id;
+        next.nativeOverlayRevision = revision;
+        next.paintSpeed = old?.paintSpeed ?? 1;
+        next.confirmPaint = old?.confirmPaint ?? true;
+        next.autoDrawConfig = old?.autoDrawConfig ?? null;
+        next.paintSelected = old?.paintSelected ?? false;
+        if (old) {
+          const index = this.bot.images.indexOf(old);
+          old.destroy();
+          this.bot.images.splice(index, 0, next);
+          if (this.selectedGalleryImage === old) this.selectedGalleryImage = next;
+          updated++;
+        } else {
+          this.bot.images.push(next);
+          added++;
+        }
+      }
+      await this.bot.readMap();
+      this.bot.updateTasks();
+      H(this.bot, true);
+      this.renderImagesList();
+      this.showNativeNotice(`Canvas actualizados: ${added} nuevos y ${updated} modificados.`);
+    } catch (error) {
+      this.showNativeNotice('No se pudieron actualizar los Canvas de WPlace: ' + (error?.message || error));
+    } finally { button.disabled = false; }
+  }
   importMobileImage(file) {
     return console.log("[MACROSHARK][Widget] Add image flow started"), this.setDisabled("add-image", !0), this.run(f("taskAddingImage"), async () => {
       try {
@@ -5809,7 +5932,7 @@ class jo extends ao {
           type: l.type
         });
         let i;
-        if (/\.(?:oki|kgm)$/i.test(l.name)) i = await S.fromJSON(this.bot, JSON.parse(await l.text()));else if (l.name.toLowerCase().endsWith(".wplace")) {
+        if (l.name.toLowerCase().endsWith(".wplace")) {
           const template = macrosharkParseWplace(await l.text());
           const image = new Image();
           image.src = template.url;
@@ -5821,7 +5944,7 @@ class jo extends ao {
             await this.waitForStableViewportProjection();
             position = J.fromScreenPosition(this.bot, this.defaultImageScreenPosition());
           }
-          i = new S(this.bot, position, new q(this.bot, sharkSourceCanvas(image, template.width)), undefined, template.opacity, false, false, true, [], template.locked);
+          i = new S(this.bot, position, new q(this.bot, sharkSourceCanvas(image, template.displayWidth)), undefined, template.opacity, false, false, true, [], template.locked);
           image.src = '';
         } else {
           let s = new FileReader();
@@ -5834,7 +5957,7 @@ class jo extends ao {
           await this.waitForStableViewportProjection();
           i = new S(this.bot, J.fromScreenPosition(this.bot, this.defaultImageScreenPosition()), new q(this.bot, optimized));
         }
-        if (!i.displayName) i.displayName = l.name.replace(/\.(?:oki|kgm|wplace|png|jpe?g|webp|gif)$/i, '') || l.name;
+        if (!i.displayName) i.displayName = l.name.replace(/\.(?:wplace|png|jpe?g|webp|gif)$/i, '') || l.name;
         this.bot.images.push(i);
         console.log("[MACROSHARK][Widget] Image instance added", {
           images: this.bot.images.length
@@ -6185,6 +6308,27 @@ class jo extends ao {
       button.disabled = false;
     }
   }
+  getPaintImage() {
+    return this.bot.images.find(image => image.paintSelected) || null;
+  }
+  showPaintSelectionPrompt() {
+    this.selectedGalleryImage = null;
+    this.open = true;
+    this.renderImagesList();
+    this.showNativeNotice('Selecciona una imagen en Canvas para empezar a pintar.');
+  }
+  selectPaintImage(image, rerender = true) {
+    if (!this.bot.images.includes(image)) return;
+    for (const entry of this.bot.images) entry.paintSelected = entry === image;
+    this.activeImageIndex = this.bot.images.indexOf(image);
+    this.paintSpeed = image.paintSpeed || 1;
+    this.manualConfirmation = image.confirmPaint === false;
+    this.autoOverlayConfig = image.autoDrawConfig || null;
+    this.refreshAutoOverlayStatusText();
+    this.syncPaintControls();
+    H(this.bot, true);
+    if (rerender) this.renderImagesList();
+  }
   renderImagesList() {
     this.bot.referenceSignature = null;
     this.bot.scheduleReferencePreview?.();
@@ -6197,11 +6341,11 @@ class jo extends ao {
     for (let a = 0; a < this.bot.images.length; a++) {
       let l = this.bot.images[a],
         i = document.createElement("div");
-      o.append(i), i.className = "image shark-gallery-card", i.innerHTML = `<button class="shark-detail-back" type="button" aria-label="Volver a canvas">← Volver</button><button class="preview" title="Abrir opciones de esta plantilla">
+      o.append(i), i.className = "image shark-gallery-card", i.innerHTML = `<button class="shark-detail-back" type="button" aria-label="Volver a canvas">← Volver</button><div class="shark-image-actions"><button class="shark-image-select" type="button"></button><button class="shark-image-speed" type="button"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i><span></span></button><button class="shark-image-confirm" type="button"><i class="fa-solid fa-check" aria-hidden="true"></i><span></span></button><button class="shark-image-autodraw" type="button"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>Configurar AutoDraw</span></button><button class="shark-image-capture" type="button"><i class="fa-solid fa-camera" aria-hidden="true"></i><span>Capturar imagen</span></button></div><button class="preview" title="Seleccionar esta plantilla para pintar">
   <img src="${l.pixels.image.src}" alt="Image preview">
 </button>
   <div class="shark-card-heading"><strong class="shark-card-name"></strong><input class="shark-card-name-input" type="text" maxlength="80" aria-label="Nuevo nombre de la plantilla" hidden><button class="shark-card-rename" type="button" title="Cambiar nombre" aria-label="Cambiar nombre de la plantilla"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></button><span class="shark-card-size"></span></div>
-  <div class="image-progress"><span class="image-progress-label"></span><progress max="100" value="0" aria-label="Progreso de imagen"></progress></div>
+  <div class="image-progress"><div class="shark-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Progreso de imagen"><span class="shark-progress-done"></span><span class="shark-progress-remaining"></span></div><span class="image-progress-label"></span></div>
   <div class="shark-image-settings"><label>Modo de pintado<select class="shark-card-strategy" aria-label="Modo de pintado de esta plantilla"></select></label><label>Opacidad <output class="shark-card-opacity-value"></output><input class="shark-card-opacity" type="range" min="0" max="100" aria-label="Opacidad de esta plantilla"></label><label><input class="shark-card-colors-order" type="checkbox"> Dibujar colores en orden</label><label><input class="shark-card-transparent" type="checkbox"> Pintar píxeles transparentes</label><label><input class="shark-card-available" type="checkbox"> Solo colores disponibles</label></div>
   <div class="image-controls">
     <button class="focus-map" title="Go to image position"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i></button>
@@ -6213,6 +6357,26 @@ class jo extends ao {
   </div>`;
       i.querySelector('.shark-card-name').textContent = l.displayName || `Plantilla ${a + 1}`;
       i.querySelector('.shark-card-size').textContent = `${l.pixels.width} × ${l.pixels.height}`;
+      i.classList.toggle('shark-paint-target', !!l.paintSelected);
+      const select = i.querySelector('.shark-image-select');
+      select.textContent = l.paintSelected ? '✓ Imagen seleccionada' : 'Seleccionar para pintar';
+      select.setAttribute('aria-pressed', String(!!l.paintSelected));
+      select.addEventListener('click', () => this.selectPaintImage(l));
+      const speed = i.querySelector('.shark-image-speed');
+      speed.querySelector('span').textContent = `Velocidad · x${l.paintSpeed || 1}`;
+      speed.addEventListener('click', () => {
+        l.paintSpeed = l.paintSpeed === 1 ? 2 : l.paintSpeed === 2 ? 4 : 1;
+        speed.querySelector('span').textContent = `Velocidad · x${l.paintSpeed}`;
+        if (l.paintSelected) this.paintSpeed = l.paintSpeed;
+        H(this.bot, true);
+        this.showNativeNotice(l.paintSpeed === 1 ? 'Velocidad x1: ritmo más prudente. Ninguna velocidad garantiza evitar controles de WPlace.' : `Velocidad x${l.paintSpeed} para esta imagen.`);
+      });
+      const confirm = i.querySelector('.shark-image-confirm');
+      const refreshConfirm = () => { confirm.querySelector('span').textContent = `Confirmar pintado · ${l.confirmPaint ? 'activo' : 'apagado'}`; confirm.classList.toggle('shark-running', l.confirmPaint); confirm.setAttribute('aria-pressed', String(l.confirmPaint)); };
+      refreshConfirm();
+      confirm.addEventListener('click', () => { l.confirmPaint = !l.confirmPaint; if (l.paintSelected) this.manualConfirmation = !l.confirmPaint; refreshConfirm(); H(this.bot, true); });
+      i.querySelector('.shark-image-autodraw').addEventListener('click', () => { this.selectPaintImage(l, false); this.autoConfigImage = l; this.openAutoOverlayModal(); });
+      i.querySelector('.shark-image-capture').addEventListener('click', () => { this.selectPaintImage(l, false); this.captureTemplate(); });
       const rename = i.querySelector('.shark-card-rename');
       const name = i.querySelector('.shark-card-name');
       const nameInput = i.querySelector('.shark-card-name-input');
@@ -6278,12 +6442,14 @@ class jo extends ao {
       i.querySelector('.preview').addEventListener('click', () => {
         this.activeImageIndex = a;
         this.selectedGalleryImage = l;
+        this.selectPaintImage(l, false);
         this.renderImagesList();
       });
       i.addEventListener('click', event => {
         if (this.selectedGalleryImage || event.target.closest('button, input, select, label')) return;
         this.activeImageIndex = a;
         this.selectedGalleryImage = l;
+        this.selectPaintImage(l, false);
         this.renderImagesList();
       });
       i.querySelector('.shark-detail-back').addEventListener('click', () => {
@@ -6325,11 +6491,12 @@ class jo extends ao {
         remaining = image.pendingPixelCount();
       const done = Math.max(0, total - remaining),
         percent = total ? Math.min(100, Math.floor(done / total * 100)) : 0;
-      row.querySelector('.image-progress-label').textContent = done.toLocaleString() + ' / ' + total.toLocaleString() + ' · ' + percent + '%';
-      const bar = row.querySelector('progress');
-      bar.value = percent;
-      bar.setAttribute('aria-label', f('progressSection'));
-      bar.setAttribute('aria-valuetext', percent + '%');
+      row.querySelector('.image-progress-label').textContent = percent + '% · ' + remaining.toLocaleString() + ' restantes';
+      const bar = row.querySelector('.shark-progress-track');
+      bar.querySelector('.shark-progress-done').style.width = `${total ? done / total * 100 : 0}%`;
+      bar.querySelector('.shark-progress-remaining').style.width = `${total ? remaining / total * 100 : 0}%`;
+      bar.setAttribute('aria-valuenow', String(percent));
+      bar.setAttribute('aria-valuetext', `${percent}% · ${remaining} restantes`);
     }
   }
   syncOverlayVisibilityFromStorage() {
@@ -6367,10 +6534,10 @@ class jo extends ao {
     dialog.className = 'macroshark-guide';
     dialog.setAttribute('aria-labelledby', 'macroshark-guide-title');
     dialog.innerHTML = "<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><s\
- mall>Plus.33 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
+ mall>Plus.35 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
 >×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Importa una imagen, colócala en el mapa, seleccio\
 na los colores disponibles y elige cómo dibujarla.</p>\n<p>Selecciona una tarjeta de Canvas para cambiar el modo de pintado, la opacidad, los colores y el tamaño de esa imagen. El panel que aparecía debajo de la plantilla en el mapa se retiró.</p>\n<details open><summary>Primeros pasos</summary><ol><li\
->Pulsa <b>Importar Imagen</b> y elige una imagen o una plantilla .oki/.kgm/.wplace. Las plantillas .wplace conservan su posición guardada en el mapa.</li><li>Abre el candado de\
+>Pulsa <b>Importar Imagen</b> y elige una imagen o una plantilla .wplace. Las plantillas .wplace conservan su posición guardada en el mapa.</li><li>Abre el candado de\
  la imagen para moverla con el ratón o con un dedo. Ciérralo al terminar: queda anclada al mapa.</li><li>Pulsa\
  el botón de verificación de su tarjeta para activar solo los colores que tienes en tu cuenta.</li><li>Abre lo\
 s ajustes de estrategia para elegir el recorrido de pintado.</li><li>Elige el límite de píxeles y pulsa <b>Dib\
@@ -6399,10 +6566,9 @@ tación y botones de cada imagen</summary><dl>\n<dt>Vista previa · encabezado I
 pintar a mano: cuadrados centrados del 50 % del tamaño de cada píxel, con 100 % de opacidad. El mapa queda vis\
 ible alrededor y los toques pasan a la página. Es independiente de Mostrar/Ocultar plantillas; el color de Pintar indica que está activa. Sustituye visualmente la superposición normal mientras está encendida, sin cambiar su preferenc\
 ia. Acerca el mapa si los píxeles son demasiado pequeños para distinguir los cuadrados. No coloca ni confirma \
-píxeles.</dd><dt>Importar Imagen</dt><dd>Abre el selector del dispositivo. Acepta imágenes y plantillas .oki/.\
-kgm/.wplace. Las imágenes y ajustes se guardan localmente; no se sincronizan entre dispositivos. Para imágenes\
+píxeles.</dd><dt>Importar Imagen</dt><dd>Abre el selector del dispositivo. Acepta imágenes y plantillas .wplace. Las imágenes y ajustes se guardan localmente; no se sincronizan entre dispositivos. Para imágenes\
  mayores de un megapíxel se ofrece reducir la resolución antes del análisis, o conservarla expresamente. Las p\
-lantillas .oki mantienen su tamaño guardado. Los colores se calculan una vez por tamaño y se guardan como índi\
+lantillas .wplace mantienen su tamaño guardado. Los colores se calculan una vez por tamaño y se guardan como índi\
 ces.</dd>\n<dt>Miniatura</dt><dd>Abre la vista previa y las opciones de pintado de esa imagen.</dd>\n<dt>Ir a \
 la imagen · mira</dt><dd>Desplaza el mapa hacia la ubicación guardada de la imagen.</dd>\n<dt>Colores · paleta\
 </dt><dd>Abre los colores de la imagen. Puedes buscarlos, activarlos o desactivarlos y reorganizar su priorida\
@@ -6411,7 +6577,7 @@ s</dt><dd>Abre la vista previa de los modos de pintado y permite elegir el recor
 ibles · verificación</dt><dd>Consulta tu cuenta, activa los colores gratuitos y premium desbloqueados, y desac\
 tiva los bloqueados para esa imagen. Vuelve a pulsarlo si compras un color. Si falla la consulta, muestra un e\
 rror.</dd>\n<dt>Descargar · flecha hacia abajo sobre línea</dt><dd>Exporta la imagen con su configuración como\
- plantilla .oki para volver a importarla. </dd>\n<dt>Eliminar · papelera</dt><dd>Quita la imagen del macro. No\
+ plantilla .wplace para volver a importarla. </dd>\n<dt>Eliminar · papelera</dt><dd>Quita la imagen del macro. No\
  borra lo pintado en el mapa.</dd>\n<dt>Subir / bajar · flechas</dt><dd>Cambia el orden de las imágenes. Se tr\
 abajan en orden secuencial.</dd>\n<dt>Progreso de la tarjeta</dt><dd>Resume los píxeles contabilizados respect\
 o al total de la imagen. No es una confirmación del servidor; se recalcula al leer el mapa y depende de los co\
@@ -6513,6 +6679,7 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
   startAutoOverlay() {
     if (this.updateRequired) { macrosharkShowUpdate(this.updateRequired); return; }
     if (this.autoOverlayTickRunning || this.drawActionRunning) return;
+    if (!this.getPaintImage()) { this.showPaintSelectionPrompt(); return; }
     try {
       this.bot.assertAutomationReady();
     } catch (error) {
@@ -6559,9 +6726,8 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
         this.status = `⚠️ ${f("autoOverlayStopped")}: ${f("autoOverlayNoTasks")}`, this.stopAutoOverlay();
         return;
       }
-      // AutoDraw always confirms its own prepared batch. The manual-paint
-      // preference applies only to the separate Dibujar action.
-      await this.waitAndClickPaintButton({ automatic: true }), void 0;
+      // Each image controls whether its prepared batch is confirmed automatically.
+      await this.waitAndClickPaintButton({ automatic: this.getPaintImage()?.confirmPaint !== false }), void 0;
     } catch (a) {
       if (this.bot.cancelDrawing) this.status = "AutoDraw detenido. Los píxeles preparados se conservan.";else this.bot.pauseAutomation(a.message || "Error de auto dibujo");
     } finally {
@@ -6571,7 +6737,11 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
     }
   }
   saveAutoOverlayConfig(o) {
-    this.autoOverlayConfig = o, localStorage.setItem(ia, JSON.stringify(o)), $({
+    this.autoOverlayConfig = o;
+    const image = this.autoConfigImage || this.getPaintImage();
+    if (image) { image.autoDrawConfig = o; H(this.bot, true); }
+    this.autoConfigImage = null;
+    localStorage.setItem(ia, JSON.stringify(o)); $({
       autoDraw: this.toControlPixelSettings(o)
     }), void 0;
   }
@@ -6639,7 +6809,7 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
     };
   }
   openAutoOverlayModal() {
-    const config = this.autoOverlayConfig || {
+    const config = this.autoConfigImage?.autoDrawConfig || this.autoOverlayConfig || {
       value: 1,
       unit: 'minutes',
       pixels: 60,
@@ -6698,7 +6868,7 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
       this.refreshAutoOverlayStatusText();
       this.closeWorkspacePanel();
     };
-    this.openWorkspacePanel('Auto Draw', content);
+    this.openWorkspacePanel('Auto Draw', content, () => { this.autoConfigImage = null; });
   }
   getCurrentWplaceLocation() {
     let o = w => {
@@ -6871,6 +7041,7 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
   }
   async drawAndClickPaintWhenReady() {
     if (this.updateRequired) { macrosharkShowUpdate(this.updateRequired); return; }
+    if (!this.getPaintImage()) { this.showPaintSelectionPrompt(); return; }
     if (this.drawActionRunning) {
       this.bot.cancelDrawing = true;
       this.status = 'Deteniendo dibujo…';
@@ -6879,6 +7050,9 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
     if (this.$draw.disabled || this.autoOverlayTickRunning || this.autoOverlayIntervalId) return;
     this.drawActionRunning = true;
     this.bot.cancelDrawing = false;
+    const image = this.getPaintImage();
+    this.paintSpeed = image.paintSpeed || 1;
+    this.manualConfirmation = image.confirmPaint === false;
     this.syncActionButtons();
     try {
       await this.bot.draw({
@@ -7132,7 +7306,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
     body.className = 'shark-subpanel-body';
     body.append(content);
     panel.append(head, body);
-    this.element.append(panel);
+    this.$imagesSection.append(panel);
     this.element.classList.add('shark-subpanel-open');
     this.workspacePanel = {
       panel,
@@ -7144,13 +7318,13 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
   openTemplateEditor() {
     const content = document.createElement('div');
     content.className = 'shark-editor';
-    content.innerHTML = `<label class="macroshark-inline-file"><span>Cargar plantilla</span><input class="editor-file" type="file" accept="image/*,.oki,.kgm,.wplace" aria-label="Cargar plantilla para editar"></label>
+    content.innerHTML = `<label class="macroshark-inline-file"><span>Cargar plantilla</span><input class="editor-file" type="file" accept="image/*,.wplace" aria-label="Cargar plantilla para editar"></label>
 <p class="editor-status" role="status">Consultando colores disponibles…</p>
 <div class="editor-dimensions"><label>Ancho (px)<input class="editor-width" type="number" min="1" max="8192" step="1" disabled></label><label>Alto (px)<input class="editor-height" type="number" min="1" max="8192" step="1" disabled></label></div>
 <p>Se mantiene la proporción original. Los cambios se muestran en la vista previa.</p>
 <canvas class="editor-preview" width="1" height="1"></canvas>
 <strong>Colores disponibles en tu cuenta</strong><p>Desmarca los que no quieras usar: se convertirán al color seleccionado más cercano.</p><div class="editor-colors"></div>
-<label>Formato para guardar<select class="editor-format"><option value="oki">Plantilla .oki</option><option value="png">Imagen .png</option><option value="jpg">Imagen .jpg (fondo blanco)</option></select></label>
+<label>Formato para guardar<select class="editor-format"><option value="wplace">Plantilla .wplace</option><option value="png">Imagen .png</option><option value="jpg">Imagen .jpg (fondo blanco)</option></select></label>
 <div class="editor-footer"><button class="editor-add" disabled>Agregar Plantilla</button><button class="editor-save" disabled>Guardar Plantilla</button></div>`;
     const state = {
       source: null,
@@ -7287,14 +7461,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
       status('Cargando plantilla…');
       try {
         let source;
-        if (/\.(?:oki|kgm)$/i.test(file.name)) {
-          const record = JSON.parse(await file.text());
-          if (!record.pixels) throw Error('Plantilla inválida: falta el contenido de imagen.');
-          const pixels = await q.fromJSON(this.bot, record.pixels);
-          pixels.canvas.naturalWidth = pixels.width;
-          pixels.canvas.naturalHeight = pixels.height;
-          source = sharkSourceCanvas(pixels.canvas, pixels.width);
-        } else {
+        {
           const image = new Image();
           let url,
             temporary = false;
@@ -7366,19 +7533,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
         if (!pixels) throw Error('Carga una plantilla primero.');
         const format = find('format').value;
         let blob;
-        if (format === 'oki') blob = new Blob([JSON.stringify({
-          pixels: pixels.toJSON(),
-          position: [0, 0],
-          strategy: 'SPIRAL_FROM_CENTER',
-          opacity: 50,
-          drawTransparentPixels: false,
-          drawColorsInOrder: false,
-          skipUnavailableColors: true,
-          colors: [],
-          lock: false
-        })], {
-          type: 'application/json'
-        });else {
+        if (format === 'wplace') blob = new Blob([JSON.stringify(macrosharkToWplace(pixels.canvas, 'MacroShark', null, 50), null, 2)], { type: 'application/json' });else {
           const canvas = document.createElement('canvas');
           canvas.width = pixels.width;
           canvas.height = pixels.height;
@@ -7425,7 +7580,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
           schedule();
         };
       }
-      status('Carga una imagen o plantilla .oki/.kgm/.wplace.');
+      status('Carga una imagen o plantilla .wplace.');
       if (state.source) render();
       enable();
     }).catch(error => {
@@ -7751,6 +7906,8 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
           let g = await S.fromJSON(this, a.images[c]);
           this.images.push(g), g.update();
         }
+        const savedSelection = this.images.find(image => image.paintSelected);
+        if (savedSelection) this.widget.selectPaintImage(savedSelection, false);
         this.log("Saved images restored", {
           images: this.images.length
         }), await this.readMap(), this.updateTasks(), this.widget.setDisabled("draw", !1), this.widget.setDisabled("draw-and-paint", !1), this.widget.setDisabled("add-image", !1), this.widget.setDisabled("capture-template", !1), this.mobileReady = true, globalThis.macrosharkPendingUpdate && this.widget.requireUpdate(globalThis.macrosharkPendingUpdate), this.log("Initialization completed; controls enabled"), void 0;
@@ -7814,11 +7971,14 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
     };
   }
   getTotalPendingTasks() {
-    return this.images.reduce((o, a) => o + a.tasks.length, 0);
+    return this._widget?.getPaintImage()?.tasks.length || 0;
   }
   draw(o = {}) {
     if (this._widget?.updateRequired) return Promise.reject(new Error('Actualiza MacroShark antes de pintar.'));
     if (!this.ensureFeatureAccess("draw")) return Promise.resolve();
+    const paintImage = this.widget.getPaintImage();
+    if (!paintImage) { this.widget.showPaintSelectionPrompt(); return Promise.resolve(); }
+    const paintImages = [paintImage];
     this.log("Draw requested", {
       strategy: this.strategy,
       images: this.images.length
@@ -7843,7 +8003,7 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
         charges: r
       });
       let c = 0;
-      for (let p = 0; p < this.images.length; p++) c += this.images[p].tasks.length;
+      for (let p = 0; p < paintImages.length; p++) c += paintImages[p].tasks.length;
       switch (this.log("Tasks prepared", {
         tasks: c
       }), this.strategy) {
@@ -7851,8 +8011,8 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
           {
             while (r > 0) {
               let p = !0;
-              for (let d = 0; d < this.images.length && r > 0; d++) {
-                let t = this.images[d].tasks.shift();
+              for (let d = 0; d < paintImages.length && r > 0; d++) {
+                let t = paintImages[d].tasks.shift();
                 if (!t) continue;
                 (await this.drawTask(t)) && r--, await Q(this.widget.pixelPreparationDelay()), p = !1;
               }
@@ -7865,8 +8025,8 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
             for (let p = 0; p < c && r > 0; p++) {
               let d = 1,
                 t;
-              for (let w = 0; w < this.images.length; w++) {
-                let n = this.images[w],
+              for (let w = 0; w < paintImages.length; w++) {
+                let n = paintImages[w],
                   b = 1 - n.tasks.length / (n.pixels.pixels.length * n.pixels.pixels[0].length);
                 if (b < d) d = b, t = n;
               }
@@ -7877,8 +8037,8 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
             break;
           }
         case "SEQUENTIAL":
-          for (let p = 0; p < this.images.length; p++) {
-            let d = this.images[p];
+          for (let p = 0; p < paintImages.length; p++) {
+            let d = paintImages[p];
             while (r > 0) {
               const t = d.tasks.shift();
               if (!t) break;
@@ -8227,6 +8387,8 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
   }
   async drawOverlayPixelsBatch(o) {
     if (!this.ensureFeatureAccess("autoDraw")) return 0;
+    const paintImage = this.widget.getPaintImage();
+    if (!paintImage) { this.widget.showPaintSelectionPrompt(); return 0; }
     let a = Math.max(1, Math.floor(o)),
       l = 0;
     return await this.widget.run(f("taskDrawingOverlayPixels"), async () => {
@@ -8245,12 +8407,14 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
     }), l;
   }
   takeNextTaskFromStrategy() {
+    const selected = this._widget?.getPaintImage();
+    if (!selected) return;
     switch (this.strategy) {
       case "ALL":
       case "SEQUENTIAL":
         {
-          for (let o = 0; o < this.images.length; o++) {
-            let a = this.images[o].tasks.shift();
+          for (let o = 0; o < 1; o++) {
+            let a = selected.tasks.shift();
             if (a) return a;
           }
           return;
@@ -8259,8 +8423,8 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
         {
           let o,
             a = Number.POSITIVE_INFINITY;
-          for (let l = 0; l < this.images.length; l++) {
-            let i = this.images[l];
+          for (let l = 0; l < 1; l++) {
+            let i = selected;
             if (!i.tasks.length) continue;
             let r = i.pixels.pixels.length * i.pixels.pixels[0].length,
               s = 1 - i.tasks.length / r;
@@ -8747,7 +8911,7 @@ function macrosharkStartupError(error) {
 }
 const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/latest.json';
 const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js';
-const MACROSHARK_CURRENT_VERSION = 'Plus.33';
+const MACROSHARK_CURRENT_VERSION = 'Plus.35';
 
 function macrosharkVersionNumber(value) {
   const match = /^Plus\.(\d+)$/.exec(value);
@@ -8854,8 +9018,8 @@ try {
     const shared = globalThis.unsafeWindow ?? globalThis;
     if (!shared.__macrosharkBooting && !root?.hasAttribute('data-macroshark-active') && !document.querySelector('.wwidget')) {
       shared.__macrosharkBooting = true;
-      if (root) root.setAttribute('data-macroshark-active', 'Plus.33');
-      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.33'), { once: true });
+      if (root) root.setAttribute('data-macroshark-active', 'Plus.35');
+      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.35'), { once: true });
       ll();
       globalThis.macroshark = new ba();
       macrosharkStartUpdateChecks();
@@ -8875,15 +9039,76 @@ function macrosharkParseWplace(text) {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width * height > 16000000) throw Error('Dimensiones inválidas en la plantilla .wplace.');
   const url = macrosharkLocalImageUrl(record.image?.dataUrl);
   let position = null;
-  if (record.bounds) {
+  let displayWidth = width;
+  if (record.bounds && record.hasPlaced !== false) {
     const { north, south, west, east } = record.bounds;
     if (![north, south, west, east].every(Number.isFinite) || north <= south || east <= west) throw Error('Ubicación inválida en la plantilla .wplace.');
     const worldX = longitude => (longitude + 180) / 360 * E;
     const worldY = latitude => (1 - Math.log(Math.tan(latitude * Math.PI / 180) + 1 / Math.cos(latitude * Math.PI / 180)) / Math.PI) / 2 * E;
     const x = Math.round(worldX(west));
     const y = Math.round(worldY(north));
-    if (Math.abs(Math.round(worldX(east)) - x - width) > 1 || Math.abs(Math.round(worldY(south)) - y - height) > 1) throw Error('Los límites .wplace no coinciden con el tamaño de la imagen.');
+    displayWidth = Math.round(worldX(east)) - x;
+    const displayHeight = Math.round(worldY(south)) - y;
+    if (displayWidth < 1 || displayHeight < 1 || Math.abs(displayWidth / displayHeight - width / height) > 0.03) throw Error('Los límites .wplace no coinciden con la proporción de la imagen.');
     position = { x, y };
   }
-  return { url, width, height, position, opacity: Number.isFinite(record.opacity) ? Math.max(0, Math.min(100, record.opacity * 100)) : 50, locked: !!record.locked };
+  return { url, width, height, displayWidth, position, opacity: Number.isFinite(record.opacity) ? Math.max(0, Math.min(100, record.opacity * 100)) : 50, locked: !!record.locked };
+}
+function macrosharkToWplace(canvas, name, position, opacity = 50, locked = false) {
+  const x = position?.globalX ?? 0;
+  const y = position?.globalY ?? 0;
+  const longitude = value => value / E * 360 - 180;
+  const latitude = value => Math.atan(Math.sinh(Math.PI * (1 - 2 * value / E))) * 180 / Math.PI;
+  return {
+    id: globalThis.crypto?.randomUUID?.() || `macroshark-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    schemaVersion: '1', name, opacity: Math.max(0, Math.min(1, opacity / 100)),
+    image: { dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height },
+    bounds: { north: latitude(y), south: latitude(y + canvas.height), west: longitude(x), east: longitude(x + canvas.width) },
+    colorMetric: 'lab', dithering: false, useLegacyColors: false, colorPaletteMode: 'all',
+    order: 0, locked: !!locked, hasPlaced: !!position, visible: true
+  };
+}
+async function macrosharkReadNativeOverlays() {
+  const raw = localStorage.getItem('template-overlays');
+  const records = raw ? JSON.parse(raw) : [];
+  if (!Array.isArray(records)) throw Error('La lista local de WPlace no tiene un formato válido.');
+  const local = records.filter(record => record && typeof record.id === 'string' && !record.canvas);
+  if (!local.length) return [];
+  const db = await new Promise((resolve, reject) => {
+    const request = indexedDB.open('wplace-templates');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || Error('No se pudo abrir el almacenamiento de WPlace.'));
+    request.onblocked = () => reject(Error('Cierra otras pestañas de WPlace y vuelve a intentarlo.'));
+  });
+  try {
+    if (!db.objectStoreNames.contains('images')) throw Error('WPlace no tiene imágenes locales guardadas.');
+    const read = id => new Promise((resolve, reject) => {
+      const request = db.transaction('images', 'readonly').objectStore('images').get(id);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || Error('No se pudo leer una imagen local.'));
+    });
+    const result = [];
+    for (const record of local) {
+      const data = await read(record.id);
+      if (!data) continue;
+      let url;
+      if (data instanceof Blob) url = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(data);
+      });
+      else if (typeof data === 'string') url = data;
+      else if (data?.dataUrl) url = data.dataUrl;
+      else if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) url = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(new Blob([data]));
+      });
+      if (!url) continue;
+      result.push({ ...record, image: { dataUrl: macrosharkLocalImageUrl(url), width: record.originalWidth, height: record.originalHeight } });
+    }
+    return result;
+  } finally { db.close(); }
 }
