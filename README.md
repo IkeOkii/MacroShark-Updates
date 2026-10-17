@@ -1,5 +1,13 @@
 # MacroShark
 
+## AsistenteOki independiente
+
+**[Instalar AsistenteOki](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/AsistenteOki.user.js)** · [Guía de AsistenteOki](README-AsistenteOki.md)
+
+Asistente con MacroShark, Killua y Doroty para identificar coordenadas, buscar píxeles y capturar imágenes PNG/JPG en WPlace. Se instala por separado y tiene sus propias actualizaciones. Puedes usarlo solo o junto al macro; no reemplaza MacroShark ni modifica su aviso de actualización.
+
+---
+
 MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.35**.
 
 ## Instalación y actualizaciones
