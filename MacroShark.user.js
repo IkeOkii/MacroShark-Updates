@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.36
+// @version      Plus.37
 // @description  Macro para WPlace en PC y móvil: plantillas por selección, captura, coordenadas y AutoDraw
 // @author       Ike
 // @license      MPL-2.0
 // @run-at       document-start
 // @match        *://wplace.live/*
-// @updateURL    https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js
-// @downloadURL  https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js
+// @updateURL    https://raw.githubusercontent.com/IkeOkii/MacroShark/main/MacroShark.user.js
+// @downloadURL  https://raw.githubusercontent.com/IkeOkii/MacroShark/main/MacroShark.user.js
 // @grant        unsafeWindow
 // @grant        GM_info
 // @connect      wplace.live
@@ -5292,7 +5292,7 @@ html[data-game-ui] .wimage .wrapper>.resize::after{border-radius:2px;box-shadow:
 @media(max-width:420px){.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .widget-section-images>.widget-image-actions .shark-sync-wplace span{font-size:11px}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:wrap}.wwidget .widget-section-images .shark-canvas-brand{flex:1 1 100%}.wwidget .widget-section-images .header-config{width:30px;height:30px;min-height:30px}}
 html[data-game-ui] .wwidget .shark-progress-track,html[data-game-ui] .wwidget .shark-image-actions button{border-radius:2px!important}
 
-/* Plus.36: shared theme for detached dialogs and per-image settings. */
+/* Plus.37: shared theme for detached dialogs and per-image settings. */
 :root{--ms-preview-surface:var(--color-base-200,#f2f7fe)}
 .wwidget,.macroshark-modal,.macroshark-guide,.wimage{--text:var(--ms-ink);--bg:var(--ms-surface);--panel:var(--ms-raised);--border:var(--ms-border);--accent:var(--ms-accent);--text-invert:var(--ms-on-accent);--main:var(--ms-accent);--main-hover:var(--ms-accent);--hover:var(--ms-control);--background:var(--ms-surface);--background-hover:var(--ms-raised);--background-disabled:var(--ms-control);--surface-card:var(--ms-raised);--surface-card-hover:var(--ms-control);--input-bg:var(--ms-surface);--input-border:var(--ms-border);--input-hover:var(--ms-raised);--ring:var(--ms-accent);--glow-main:transparent;--action-download:var(--ms-ink);--action-edit:var(--ms-ink);--action-delete:var(--ms-ink);--action-palette:var(--ms-ink);--action-lock:var(--ms-ink)}
 .wwidget [hidden],.macroshark-modal [hidden],.shark-auto-countdown[hidden]{display:none!important}
@@ -5349,7 +5349,7 @@ html[data-game-ui] .wwidget .widget-section-images>.shark-inline-notice{border-r
 .macroshark-modal .color-chip,.macroshark-modal .preview-card{border-radius:14px!important}
 html[data-game-ui] .macroshark-modal .color-chip,html[data-game-ui] .macroshark-modal .preview-card,html[data-game-ui] .wwidget .shark-auto-inline,html[data-game-ui] .shark-auto-countdown{border-radius:2px!important}
 @media(max-width:700px){.wwidget .shark-auto-inline{grid-column:1!important;grid-row:auto!important;margin:0}.wwidget .shark-detail-active:has(.shark-auto-inline)>.image-progress,.wwidget .shark-detail-active:has(.shark-auto-inline)>.shark-image-settings{display:none!important}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:wrap;min-height:44px}.wwidget .shark-canvas-brand{flex:1 1 auto!important}.wwidget .macroshark-reference-toggle{flex:0 0 30px!important;min-width:30px!important;width:30px!important}.wwidget .shark-detail-active .shark-card-heading{min-height:34px}.wwidget .shark-auto-inline{grid-template-columns:1fr}.shark-auto-inline>label{grid-column:1/-1}}
-/* Plus.36: global map capture, free map gestures and uncropped preview. */
+/* Plus.37: global map capture, free map gestures and uncropped preview. */
 .wwidget .widget-section-images>.widget-image-actions{grid-template-columns:minmax(0,1fr) 150px 116px 180px}
 .wwidget .shark-capture-global{display:flex;align-items:center;justify-content:center;gap:6px;min-width:40px;font-size:12px}
 .wwidget .shark-detail-active .shark-image-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -5776,7 +5776,7 @@ class SharkWidget extends SharkDisposable {
       this.$quickCanvas.setAttribute('aria-label', label);
       this.$quickCanvas.setAttribute('aria-expanded', String(this.canvasVisible));
     }
-    if (this.canvasVisible) requestAnimationFrame(() => this.placeFloatingCanvas());
+    if (this.canvasVisible) requestAnimationFrame(() => {this.placeFloatingCanvas();this.galleryThumbnailState?.schedule();});
   }
   installFloatingPanels() {
     const main = this.element;
@@ -5945,7 +5945,7 @@ class SharkWidget extends SharkDisposable {
       const template=macrosharkParseWplace(JSON.stringify(record));
       const p=template.position||{x:0,y:0};
       const raw={...(old?.toJSON()||{}),pixels:{url:template.url,width:template.displayWidth,height:Math.round(template.displayWidth*template.height/template.width)},position:[p.x,p.y],displayName:record.name||old?.displayName||'Canvas de WPlace',nativeOverlayId:record.id,nativeOverlayRevision:Number(record.updatedAt)||0,nativeImageSignature:record.sourceSignature||'',opacity:old?.opacity??template.opacity,lock:old?.lock??template.locked,paintSelected:!!old?.paintSelected};
-      if(old&&old.nativeImageSignature===raw.nativeImageSignature){raw.pixels=old.toJSON().pixels;raw.galleryPreview=old.toJSON().galleryPreview;}
+      if(old&&old.nativeImageSignature===raw.nativeImageSignature){raw.pixels=old.toJSON().pixels;raw.galleryPreview=old.toJSON().galleryPreview;}else delete raw.galleryPreview;
       const next=new SharkDeferredImage(this.bot,raw);
       if(old){const at=this.bot.images.indexOf(old);old.destroy();this.bot.images.splice(at,0,next);if(this.selectedGalleryImage===old)this.selectedGalleryImage=null;updated++;}else{this.bot.images.push(next);added++;}
     }
@@ -6537,6 +6537,7 @@ class SharkWidget extends SharkDisposable {
     }
     const count = this.$imagesSection.querySelector('.shark-gallery-count');
     if (count) count.textContent = `${visible} de ${this.bot.images.length} locales`;
+    macrosharkObserveThumbnails(this);
   }
   refreshProgress() {
     for (const [image, row] of this.imageProgressRows ?? []) {
@@ -6584,7 +6585,7 @@ class SharkWidget extends SharkDisposable {
   openGuideModal() {
       if(this.guideDialog?.isConnected){this.guideDialog.querySelector('.guide-close').focus();return;}
       const dialog=document.createElement('dialog');dialog.className='macroshark-guide';
-      dialog.setAttribute('aria-labelledby','macroshark-guide-title');dialog.innerHTML="<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><small>Plus.36 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\">×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Al iniciar se carga la lista de plantillas. Toca una para prepararla; verás un indicador mientras carga. Al cambiar de imagen se libera la anterior de memoria conservando sus datos. El tiburón muestra u oculta los cuatro controles laterales: imágenes, Captura, Dibujar y AutoDraw. El botón de imágenes abre el panel general. Las actualizaciones se comprueban automáticamente. Cuando hay una versión nueva, el pintado queda bloqueado hasta instalarla; el tiburón permite volver a abrir el aviso. Mantén activa una sola copia del macro.</p>\n<details open><summary>Empezar a pintar</summary><ol><li>Importa una imagen o una plantilla .wplace, o usa «Actualizar canvas» para leer las plantillas locales de WPlace.</li><li>Toca una tarjeta para seleccionar la imagen. Sus ajustes se guardan individualmente.</li><li>Usa la mira para ir a la imagen. Desbloquéala para moverla o ajustar su tamaño con los ocho puntos del borde.</li><li>Pulsa «Empezar a pintar» debajo de la imagen, o el lápiz lateral, para preparar una tanda. «Confirmar pintado» decide si esa tanda manual se confirma al terminar. Los píxeles preparados todavía no equivalen a píxeles confirmados.</li></ol></details>\n<details><summary>Controles y ajustes por imagen</summary><p>En la columna derecha están MacroShark, el panel de imágenes, Captura, Dibujar y AutoDraw. El lápiz junto al nombre permite renombrar la imagen. La velocidad alterna x1, x2 y x4; cambia la espera de preparación, no la recarga de la cuenta ni los límites de WPlace.</p><p>En cada ficha puedes elegir el recorrido, opacidad, colores y pintado de transparentes. Los ajustes de AutoDraw se abren en un bloque compacto de esa misma ficha. Al iniciar se cierra el panel para ver el mapa; si faltan ajustes de AutoDraw, la configuración permanece abierta.</p><p>Las barras A y B contienen cuatro números compatibles con las coordenadas de WPlace: por ejemplo, 1024, 1024, 200, 300. A es la esquina superior izquierda y B la inferior derecha. Editar una mueve la imagen y calcula la otra conservando su tamaño. No se pueden cambiar mientras el macro pinta.</p><p>La mira usa el mapa de WPlace para ir directamente al centro de la imagen y conserva el zoom actual. Si ese acceso no está disponible, vuelve al arrastre anterior. Dibujar y AutoDraw no mueven la cámara ni cambian el zoom. Usa la mira antes de pintar si necesitas acercarte a la imagen. «Vista previa», con el ojo, muestra una referencia visual para pintar manualmente. La previsualización animada del recorrido se abre desde la ficha.</p></details>\n<details><summary>Mover el mapa con las flechas</summary><p>Cierra los paneles y usa ↑ ↓ ← → para mover la vista en esa dirección. Con la paleta abierta, cada paso avanza un píxel del mapa; con la paleta cerrada, avanza 40 píxeles de pantalla. Mantener una flecha repite el movimiento y soltarla lo detiene. Si pulsas dos flechas, se usa la última para conservar una dirección recta.</p><p>Para dibujar una línea, abre la paleta de WPlace, elige un color, coloca el cursor sobre el mapa y mantén Espacio junto con una flecha. El macro añade el movimiento; el pintado con Espacio sigue siendo el de WPlace. No confirma la tanda ni cambia el color.</p><p>Las flechas no se interceptan al escribir, utilizar campos o paneles, ni durante Dibujar o AutoDraw. Al cambiar de ventana se detiene el movimiento. Si WPlace no permite acceder directamente al mapa, el respaldo con arrastre puede avanzar más despacio.</p></details>\n<details><summary>Capturar una zona del mapa</summary><p>«Captura» está en la barra principal, entre «Actualizar canvas» e «Importar imagen»; en móvil se muestra con una cámara. Al abrirlo se cierran los otros paneles del macro.</p><ol><li>Pulsa «Punto A» y mueve o acerca el mapa hasta el lugar deseado. Toca un píxel sin arrastrar para seleccionarlo.</li><li>Haz lo mismo con «Punto B». Los arrastres y los gestos de zoom no eligen puntos. «Cancelar» vuelve al panel.</li><li>Revisa las coordenadas y la vista previa completa. Su tamaño se adapta a las proporciones de la selección.</li><li>Pulsa «Descargar PNG» o, en móvil, «Guardar en Archivos». Se solicita una descarga normal, sin abrir Compartir. En iPhone se guarda en la carpeta Descargas de Archivos, según los ajustes de Safari.</li><li>Para la fototeca, pulsa «Abrir para Fotos». Mantén pulsada la imagen que aparece y elige «Guardar en Fotos» o «Guardar imagen» en el menú del teléfono. El macro no puede guardarla automáticamente en la fototeca. «Volver» regresa a la captura.</li></ol><p>Ambas opciones conservan la resolución original del PNG seleccionado.</p></details>\n<details><summary>AutoDraw y cuenta regresiva</summary><p>Configura el intervalo y la cantidad de píxeles por ciclo en la imagen que deseas pintar. «Iniciar AutoDraw», debajo de esa imagen, o el triángulo lateral, inician y detienen los ciclos. Si faltan ajustes, el botón de la ficha abre la configuración primero. Junto al triángulo aparece la cuenta regresiva o «Pintando…».</p><p>Cada ciclo abre la paleta si hace falta, consulta las cargas y el mapa, prepara los píxeles pendientes y confirma automáticamente, aunque «Confirmar pintado» esté apagado. Si faltan cargas, usa las disponibles. Al terminar y comprobar la confirmación espera el intervalo indicado. Si no hay cargas todavía, espera el siguiente intervalo. El intervalo mínimo es de cinco segundos.</p><p>La opción de variar usa el 80–99 % de la cantidad y espera configuradas. Los ciclos no se superponen. Si terminas la imagen, AutoDraw se detiene. Una verificación, límite o fallo de confirmación puede necesitar revisión; se muestra el motivo. Cerrar la paleta durante la espera no cancela AutoDraw.</p></details>\n<details><summary>Importar, sincronizar y descargar</summary><p>La importación directa admite imágenes y archivos .wplace. «Actualizar canvas» lee las plantillas que WPlace guarda localmente en el mismo navegador. La sincronización va de WPlace al macro; las imágenes que cargues únicamente al macro no se envían a WPlace. No sincroniza entre dispositivos.</p><p>La flecha de descarga ofrece plantilla .wplace, PNG con transparencia o JPG con fondo blanco. .wplace guarda la imagen y su ubicación para volver a importarla. PNG y JPG guardan la imagen, sin la ubicación. En iPhone puede abrirse el menú de compartir para guardar el archivo.</p></details>\n<details><summary>Colores y apariencia</summary><p>El modo normal usa bordes redondos; el pixelado usa cuadrados. Paneles, selectores y previsualizaciones siguen el tema claro u oscuro y el acento de WPlace. Los colores de tu imagen no se alteran al cambiar el tema.</p><p>En el panel de colores puedes activar o excluir colores y cambiar su prioridad. Antes de cada tanda se abre la paleta, se lee el mapa confirmado y se revisa la selección pendiente de WPlace. Los píxeles preparados se conservan mientras sigan en esa selección; si se descartan o no llegaron al mapa, vuelven a intentarse. El avance no cuenta los preparados como confirmados.</p></details>\n<details><summary>Teclado y solución de problemas</summary><p>Shift + M: minimizar · Shift + S: abrir · Shift + V: mostrar u ocultar imágenes · Shift + Enter: dibujar · Shift + I: importar · Shift + /: guía · Shift + N/P: siguiente o anterior imagen · Shift + O: colores · Shift + L: candado.</p><p>Después de actualizar, desactiva cualquier copia de prueba y recarga WPlace. Los gestores comparten los datos locales del sitio, por lo que tus imágenes deben conservarse. Si la página necesita una verificación, resuélvela y vuelve a abrir la paleta para actualizar el estado. Safari puede retrasar temporizadores cuando la pestaña está en segundo plano; mantén WPlace visible para probar los ciclos.</p></details>\n</div>\n";
+      dialog.setAttribute('aria-labelledby','macroshark-guide-title');dialog.innerHTML="<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><small>Plus.37 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\">×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>La galería prepara miniaturas pequeñas de las tarjetas visibles y las guarda para próximas visitas, sin analizar sus colores ni tareas de pintado. Al iniciar se carga la lista de plantillas. Toca una para prepararla; verás un indicador mientras carga. Al cambiar de imagen se libera la anterior de memoria conservando sus datos. El tiburón muestra u oculta los cuatro controles laterales: imágenes, Captura, Dibujar y AutoDraw. El botón de imágenes abre el panel general. Las actualizaciones se comprueban automáticamente. Cuando hay una versión nueva, el pintado queda bloqueado hasta instalarla; el tiburón permite volver a abrir el aviso. Mantén activa una sola copia del macro.</p>\n<details open><summary>Empezar a pintar</summary><ol><li>Importa una imagen o una plantilla .wplace, o usa «Actualizar canvas» para leer las plantillas locales de WPlace.</li><li>Toca una tarjeta para seleccionar la imagen. Sus ajustes se guardan individualmente.</li><li>Usa la mira para ir a la imagen. Desbloquéala para moverla o ajustar su tamaño con los ocho puntos del borde.</li><li>Pulsa «Empezar a pintar» debajo de la imagen, o el lápiz lateral, para preparar una tanda. «Confirmar pintado» decide si esa tanda manual se confirma al terminar. Los píxeles preparados todavía no equivalen a píxeles confirmados.</li></ol></details>\n<details><summary>Controles y ajustes por imagen</summary><p>En la columna derecha están MacroShark, el panel de imágenes, Captura, Dibujar y AutoDraw. El lápiz junto al nombre permite renombrar la imagen. La velocidad alterna x1, x2 y x4; cambia la espera de preparación, no la recarga de la cuenta ni los límites de WPlace.</p><p>En cada ficha puedes elegir el recorrido, opacidad, colores y pintado de transparentes. Los ajustes de AutoDraw se abren en un bloque compacto de esa misma ficha. Al iniciar se cierra el panel para ver el mapa; si faltan ajustes de AutoDraw, la configuración permanece abierta.</p><p>Las barras A y B contienen cuatro números compatibles con las coordenadas de WPlace: por ejemplo, 1024, 1024, 200, 300. A es la esquina superior izquierda y B la inferior derecha. Editar una mueve la imagen y calcula la otra conservando su tamaño. No se pueden cambiar mientras el macro pinta.</p><p>La mira usa el mapa de WPlace para ir directamente al centro de la imagen y conserva el zoom actual. Si ese acceso no está disponible, vuelve al arrastre anterior. Dibujar y AutoDraw no mueven la cámara ni cambian el zoom. Usa la mira antes de pintar si necesitas acercarte a la imagen. «Vista previa», con el ojo, muestra una referencia visual para pintar manualmente. La previsualización animada del recorrido se abre desde la ficha.</p></details>\n<details><summary>Mover el mapa con las flechas</summary><p>Cierra los paneles y usa ↑ ↓ ← → para mover la vista en esa dirección. Con la paleta abierta, cada paso avanza un píxel del mapa; con la paleta cerrada, avanza 40 píxeles de pantalla. Mantener una flecha repite el movimiento y soltarla lo detiene. Si pulsas dos flechas, se usa la última para conservar una dirección recta.</p><p>Para dibujar una línea, abre la paleta de WPlace, elige un color, coloca el cursor sobre el mapa y mantén Espacio junto con una flecha. El macro añade el movimiento; el pintado con Espacio sigue siendo el de WPlace. No confirma la tanda ni cambia el color.</p><p>Las flechas no se interceptan al escribir, utilizar campos o paneles, ni durante Dibujar o AutoDraw. Al cambiar de ventana se detiene el movimiento. Si WPlace no permite acceder directamente al mapa, el respaldo con arrastre puede avanzar más despacio.</p></details>\n<details><summary>Capturar una zona del mapa</summary><p>«Captura» está en la barra principal, entre «Actualizar canvas» e «Importar imagen»; en móvil se muestra con una cámara. Al abrirlo se cierran los otros paneles del macro.</p><ol><li>Pulsa «Punto A» y mueve o acerca el mapa hasta el lugar deseado. Toca un píxel sin arrastrar para seleccionarlo.</li><li>Haz lo mismo con «Punto B». Los arrastres y los gestos de zoom no eligen puntos. «Cancelar» vuelve al panel.</li><li>Revisa las coordenadas y la vista previa completa. Su tamaño se adapta a las proporciones de la selección.</li><li>Pulsa «Descargar PNG» o, en móvil, «Guardar en Archivos». Se solicita una descarga normal, sin abrir Compartir. En iPhone se guarda en la carpeta Descargas de Archivos, según los ajustes de Safari.</li><li>Para la fototeca, pulsa «Abrir para Fotos». Mantén pulsada la imagen que aparece y elige «Guardar en Fotos» o «Guardar imagen» en el menú del teléfono. El macro no puede guardarla automáticamente en la fototeca. «Volver» regresa a la captura.</li></ol><p>Ambas opciones conservan la resolución original del PNG seleccionado.</p></details>\n<details><summary>AutoDraw y cuenta regresiva</summary><p>Configura el intervalo y la cantidad de píxeles por ciclo en la imagen que deseas pintar. «Iniciar AutoDraw», debajo de esa imagen, o el triángulo lateral, inician y detienen los ciclos. Si faltan ajustes, el botón de la ficha abre la configuración primero. Junto al triángulo aparece la cuenta regresiva o «Pintando…».</p><p>Cada ciclo abre la paleta si hace falta, consulta las cargas y el mapa, prepara los píxeles pendientes y confirma automáticamente, aunque «Confirmar pintado» esté apagado. Si faltan cargas, usa las disponibles. Al terminar y comprobar la confirmación espera el intervalo indicado. Si no hay cargas todavía, espera el siguiente intervalo. El intervalo mínimo es de cinco segundos.</p><p>La opción de variar usa el 80–99 % de la cantidad y espera configuradas. Los ciclos no se superponen. Si terminas la imagen, AutoDraw se detiene. Una verificación, límite o fallo de confirmación puede necesitar revisión; se muestra el motivo. Cerrar la paleta durante la espera no cancela AutoDraw.</p></details>\n<details><summary>Importar, sincronizar y descargar</summary><p>La importación directa admite imágenes y archivos .wplace. «Actualizar canvas» lee las plantillas que WPlace guarda localmente en el mismo navegador. La sincronización va de WPlace al macro; las imágenes que cargues únicamente al macro no se envían a WPlace. No sincroniza entre dispositivos.</p><p>La flecha de descarga ofrece plantilla .wplace, PNG con transparencia o JPG con fondo blanco. .wplace guarda la imagen y su ubicación para volver a importarla. PNG y JPG guardan la imagen, sin la ubicación. En iPhone puede abrirse el menú de compartir para guardar el archivo.</p></details>\n<details><summary>Colores y apariencia</summary><p>El modo normal usa bordes redondos; el pixelado usa cuadrados. Paneles, selectores y previsualizaciones siguen el tema claro u oscuro y el acento de WPlace. Los colores de tu imagen no se alteran al cambiar el tema.</p><p>En el panel de colores puedes activar o excluir colores y cambiar su prioridad. Antes de cada tanda se abre la paleta, se lee el mapa confirmado y se revisa la selección pendiente de WPlace. Los píxeles preparados se conservan mientras sigan en esa selección; si se descartan o no llegaron al mapa, vuelven a intentarse. El avance no cuenta los preparados como confirmados.</p></details>\n<details><summary>Teclado y solución de problemas</summary><p>Shift + M: minimizar · Shift + S: abrir · Shift + V: mostrar u ocultar imágenes · Shift + Enter: dibujar · Shift + I: importar · Shift + /: guía · Shift + N/P: siguiente o anterior imagen · Shift + O: colores · Shift + L: candado.</p><p>Después de actualizar, desactiva cualquier copia de prueba y recarga WPlace. Los gestores comparten los datos locales del sitio, por lo que tus imágenes deben conservarse. Si la página necesita una verificación, resuélvela y vuelve a abrir la paleta para actualizar el estado. Safari puede retrasar temporizadores cuando la pestaña está en segundo plano; mantén WPlace visible para probar los ciclos.</p></details>\n</div>\n";
       this.guideDialog=dialog;document.body.append(dialog);
       dialog.querySelector('.guide-close').onclick=()=>dialog.close();
       dialog.addEventListener('close',()=>{dialog.remove();this.guideDialog=null;this.$openConfig.focus();},{once:true});
@@ -7711,6 +7712,80 @@ function macrosharkGalleryPreview(image){
   const context=canvas.getContext('2d');context.imageSmoothingEnabled=false;context.drawImage(image.pixels.canvas,0,0,canvas.width,canvas.height);
   return image.galleryPreview=canvas.toDataURL('image/png');
 }
+// Only visible gallery cards request a tiny preview; no pixel analysis or overlays.
+function macrosharkValidThumbnail(value){return typeof value==='string'&&value.length<100000&&/^data:image\/(?:png|webp);base64,[A-Za-z0-9+/=]+$/.test(value);}
+async function macrosharkMakeThumbnail(raw){
+  const source=macrosharkLocalImageUrl(raw.pixels?.url);
+  const blob=await (await fetch(source,{credentials:'omit'})).blob();
+  const width=Number(raw.pixels?.width||raw.pixels?.indexed?.width),height=Number(raw.pixels?.height||raw.pixels?.indexed?.height);
+  let bitmap,image,canvas;
+  try{
+    // Resize during decoding where supported; fallback keeps only one decoded image.
+    if(typeof createImageBitmap==='function'&&width>0&&height>0){
+      const scale=Math.min(1,96/width,96/height);
+      try{bitmap=await createImageBitmap(blob,{resizeWidth:Math.max(1,Math.round(width*scale)),resizeHeight:Math.max(1,Math.round(height*scale)),resizeQuality:'low'});}catch{}
+    }
+    if(!bitmap){
+      image=new Image();
+      await new Promise((resolve,reject)=>{
+        const timeout=setTimeout(()=>{image.src='';reject(new Error('Tiempo de miniatura agotado.'));},10000);
+        image.onload=()=>{clearTimeout(timeout);resolve();};image.onerror=()=>{clearTimeout(timeout);reject(new Error('Miniatura no disponible.'));};image.src=source;
+      });
+    }
+    const input=bitmap||image,w=input.width||input.naturalWidth,h=input.height||input.naturalHeight;
+    if(!w||!h)throw new Error('Imagen vacía.');
+    const scale=Math.min(1,96/w,96/h);
+    canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));
+    const context=canvas.getContext('2d');context.imageSmoothingEnabled=false;context.drawImage(input,0,0,canvas.width,canvas.height);
+    const preview=canvas.toDataURL('image/webp',.3);
+    if(!macrosharkValidThumbnail(preview))throw new Error('Miniatura demasiado grande.');
+    return preview;
+  }finally{bitmap?.close();if(image){image.onload=image.onerror=null;image.src='';}if(canvas)canvas.width=canvas.height=1;}
+}
+function macrosharkThumbnailState(widget){
+  if(widget.galleryThumbnailState)return widget.galleryThumbnailState;
+  const state={queue:new Map(),failed:new WeakSet(),running:false,disposed:false,timer:0,saveTimer:0};
+  const busy=()=>state.disposed||!widget.open||!!widget.selectedGalleryImage||document.hidden||widget.loadingGalleryImage||widget.drawActionRunning||widget.autoOverlayTickRunning;
+  const schedule=()=>{if(state.timer||state.running||busy()||!state.queue.size)return;state.timer=setTimeout(run,80);};
+  const save=()=>{clearTimeout(state.saveTimer);state.saveTimer=setTimeout(()=>{state.saveTimer=0;if(!state.disposed)H(widget.bot);},1200);};
+  const run=async()=>{
+    state.timer=0;if(busy())return;
+    const next=state.queue.entries().next().value;if(!next)return;
+    const [image,card]=next;state.queue.delete(image);
+    const bounds=card.getBoundingClientRect(),area=widget.$images.getBoundingClientRect();
+    if(!image.isDeferred||!widget.bot.images.includes(image)||!card.isConnected||card.hidden||bounds.bottom<=Math.max(0,area.top)||bounds.top>=Math.min(innerHeight,area.bottom)){schedule();return;}
+    state.running=true;
+    try{
+      const preview=macrosharkValidThumbnail(image.raw.galleryPreview)?image.raw.galleryPreview:await macrosharkMakeThumbnail(image.raw);
+      if(state.disposed||!image.isDeferred||!widget.bot.images.includes(image))return;
+      image.raw.galleryPreview=preview;image.pixels.image.src=preview;save();
+      // A render or selection may have replaced the card while the bitmap decoded.
+      for(const current of widget.$images.querySelectorAll('.shark-deferred-card'))if(current.sharkImage===image){
+        const img=document.createElement('img');img.alt='Miniatura de la plantilla';img.src=preview;img.decoding='async';
+        current.querySelector('.preview').replaceChildren(img);
+      }
+    }catch{state.failed.add(image);}
+    finally{state.running=false;schedule();}
+  };
+  state.observer=new IntersectionObserver(entries=>{
+    for(const entry of entries){
+      const card=entry.target,image=card.sharkImage;
+      if(!entry.isIntersecting){state.queue.delete(image);continue;}
+      if(image?.isDeferred&&!macrosharkValidThumbnail(image.raw.galleryPreview)&&!state.failed.has(image))state.queue.set(image,card);
+    }
+    schedule();
+  },{threshold:.01});
+  state.schedule=schedule;
+  const wake=()=>schedule();document.addEventListener('visibilitychange',wake);
+  widget.runOnDestroy.push(()=>{state.disposed=true;state.observer.disconnect();clearTimeout(state.timer);clearTimeout(state.saveTimer);state.queue.clear();document.removeEventListener('visibilitychange',wake);});
+  return widget.galleryThumbnailState=state;
+}
+function macrosharkObserveThumbnails(widget){
+  const state=macrosharkThumbnailState(widget);state.observer.disconnect();state.queue.clear();
+  for(const card of widget.$images.querySelectorAll('.shark-deferred-card'))if(!card.hidden)state.observer.observe(card);
+  state.schedule();
+}
+
 function macrosharkRenderDeferredCard(widget,image,index,fragment){
   const card=document.createElement('div');card.className='image shark-gallery-card shark-deferred-card';card.sharkImage=image;
   card.classList.toggle('shark-paint-target',!!image.paintSelected);
@@ -7721,7 +7796,7 @@ function macrosharkRenderDeferredCard(widget,image,index,fragment){
   card.querySelector('.shark-card-size').textContent=image.pixels.width&&image.pixels.height?image.pixels.width+' × '+image.pixels.height:'';
   const button=card.querySelector('.preview');button.title='Cargar y seleccionar esta plantilla';button.disabled=!!widget.loadingGalleryImage;
   const thumbnail=image.raw.galleryPreview;
-  if(thumbnail&&/^data:image\/png;base64,/.test(thumbnail)&&thumbnail.length<100000){const img=document.createElement('img');img.alt='Miniatura de la plantilla';img.loading='lazy';img.src=thumbnail;button.replaceChildren(img);}
+  if(macrosharkValidThumbnail(thumbnail)){const img=document.createElement('img');img.alt='Miniatura de la plantilla';img.loading='lazy';img.src=thumbnail;button.replaceChildren(img);}
   const state=card.querySelector('.shark-template-state');
   state.textContent=loading?'Cargando plantilla…':image.loadError?'No se pudo cargar. Toca para reintentar.':'Toca para cargar';
   if(loading)state.classList.add('shark-template-loading');
@@ -9073,9 +9148,9 @@ function macrosharkStartupError(error) {
 
 
 
-const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/latest.json';
-const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js';
-const MACROSHARK_CURRENT_VERSION = 'Plus.36';
+const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark/main/latest.json';
+const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark/main/MacroShark.user.js';
+const MACROSHARK_CURRENT_VERSION = 'Plus.37';
 
 function macrosharkVersionNumber(value) {
   const match = /^Plus\.(\d+)$/.exec(value);
@@ -9182,8 +9257,8 @@ try {
     const shared = globalThis.unsafeWindow ?? globalThis;
     if (!shared.__macrosharkBooting && !root?.hasAttribute('data-macroshark-active') && !document.querySelector('.wwidget')) {
       shared.__macrosharkBooting = true;
-      if (root) root.setAttribute('data-macroshark-active', 'Plus.36');
-      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.36'), { once: true });
+      if (root) root.setAttribute('data-macroshark-active', 'Plus.37');
+      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.37'), { once: true });
       ll();
       globalThis.macroshark = new SharkBot();
       macrosharkStartUpdateChecks();

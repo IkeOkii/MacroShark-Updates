@@ -1,16 +1,23 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.36**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.37**.
 
 ## Instalación y actualizaciones
 
-Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js) desde su enlace directo en Tampermonkey (PC) o mediante **Importar desde enlace** en Stay (iPhone). Mantén una sola copia activa y recarga WPlace. Puedes respaldar tus plantillas actuales como `.wplace` antes de reemplazar una instalación anterior.
+Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShark/main/MacroShark.user.js) desde su enlace directo en Tampermonkey (PC) o mediante **Importar desde enlace** en Stay (iPhone). Mantén una sola copia activa y recarga WPlace. Puedes respaldar tus plantillas actuales como `.wplace` antes de reemplazar una instalación anterior.
 
 Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. En la misma publicación se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Ambos archivos deben pertenecer a la misma versión para que el aviso apunte al instalador correcto.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace. Al detectar una versión nueva, bloquea las funciones de pintado hasta actualizar; si cierras el aviso, el botón del macro se convierte en acceso para volver a abrirlo. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.36 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace. Al detectar una versión nueva, bloquea las funciones de pintado hasta actualizar; si cierras el aviso, el botón del macro se convierte en acceso para volver a abrirlo. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.37 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
 
 ## Nota de actualizaciones
+
+### Plus.37
+
+- La publicación principal se llama MacroShark. Los enlaces del instalador y de las actualizaciones usan su nueva dirección; se conserva el historial de la publicación pública.
+- Las tarjetas muestran una miniatura de hasta 96 píxeles antes de cargar la plantilla para pintar. Se generan una por una para las tarjetas visibles, se guardan y no analizan colores ni crean imágenes sobrepuestas. El inicio mantiene las plantillas sin decodificar.
+- Las miniaturas se actualizan cuando cambia la imagen de un canvas sincronizado desde WPlace.
+
 
 ### Plus.36
 
