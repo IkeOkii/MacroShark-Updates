@@ -1,16 +1,28 @@
 # MacroShark
 
-MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.35**.
+MacroShark para WPlace en PC y móvil. Autor: Ike. Versión del archivo: **Plus.36**.
 
 ## Instalación y actualizaciones
 
 Instala [MacroShark.user.js](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js) desde su enlace directo en Tampermonkey (PC) o mediante **Importar desde enlace** en Stay (iPhone). Mantén una sola copia activa y recarga WPlace. Puedes respaldar tus plantillas actuales como `.wplace` antes de reemplazar una instalación anterior.
 
-Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. Después se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Publica el script antes que `latest.json` para que el aviso nunca apunte a un archivo antiguo.
+Este repositorio público es la **única fuente de nuevas versiones**. Los metadatos `@updateURL` y `@downloadURL` del script apuntan al archivo de aquí. Para publicar otra versión, se reemplaza `MacroShark.user.js` en `main` y se aumenta `@version`. En la misma publicación se actualiza `latest.json` con el mismo número: es el archivo pequeño que consulta el aviso a pantalla completa. Ambos archivos deben pertenecer a la misma versión para que el aviso apunte al instalador correcto.
 
-El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace. Al detectar una versión nueva, bloquea las funciones de pintado hasta actualizar; si cierras el aviso, el botón del macro se convierte en acceso para volver a abrirlo. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.35 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
+El gestor de scripts puede comprobar el enlace del script; la frecuencia y aplicación de las actualizaciones dependen de Tampermonkey o Stay. El aviso propio de MacroShark permite abrir o copiar el enlace. Al detectar una versión nueva, bloquea las funciones de pintado hasta actualizar; si cierras el aviso, el botón del macro se convierte en acceso para volver a abrirlo. No se almacena ningún token de GitHub en el script. Si instalaste Plus.19 desde el repositorio privado, importa Plus.36 una vez desde el enlace anterior: esa versión no tenía configurada la actualización automática.
 
 ## Nota de actualizaciones
+
+### Plus.36
+
+- Inicio más ligero: recupera la lista y los ajustes sin decodificar ni analizar todas las plantillas. La imagen se prepara al seleccionarla, muestra «Cargando plantilla…» y libera la anterior de memoria conservando sus datos. Las miniaturas se guardan después del primer uso.
+- Panel general más compacto, colores del tema actual y guía actualizada. El tiburón muestra u oculta los accesos a imágenes, Captura, Dibujar y AutoDraw. Cada imagen conserva su configuración y tiene botones para iniciar el pintado y AutoDraw, que cierran el panel al empezar.
+- Captura cierra los demás paneles y permite desplazar o acercar el mapa al elegir A/B. La vista previa muestra toda la zona. La descarga PNG usa archivos sin abrir Compartir; en móvil, «Abrir para Fotos» permite guardar desde el menú de la imagen.
+- Coordenadas A/B con cuatro números: esquina superior izquierda e inferior derecha. Editar una mueve la plantilla y calcula la otra conservando su tamaño. Importación y exportación .wplace, además de PNG y JPG para descargar plantillas.
+- La mira usa el desplazamiento directo del mapa cuando está disponible y conserva el respaldo anterior. Las flechas del teclado mueven el mapa y pueden acompañar al pintado nativo con Espacio. Dibujar y AutoDraw siguen sin mover la cámara automáticamente.
+- Antes de pintar abre la paleta si hace falta y relee el mapa. Reconcilia los píxeles preparados con la selección real de WPlace; los descartados o no publicados vuelven a quedar pendientes. El avance cuenta el mapa confirmado.
+- AutoDraw configura intervalo y cantidad por imagen, confirma cada tanda y muestra el tiempo restante junto al acceso lateral. Si hay menos píxeles disponibles, utiliza los que haya y continúa en el siguiente intervalo.
+- Mantiene las actualizaciones automáticas y el bloqueo cuando se detecta una versión posterior. Si utilizabas una prueba, desactívala al instalar esta versión pública.
+- Verificado en Chromium y WebKit móvil simulados: carga por selección, captura, coordenadas, controles del mapa, paleta, ciclos de AutoDraw y reconciliación de píxeles pendientes. La compatibilidad final depende de la versión de WPlace y del navegador; no se realizaron tandas en una cuenta real.
 
 ### Plus.35
 

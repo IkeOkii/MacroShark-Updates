@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         MacroShark
 // @namespace    macroshark-ike
-// @version      Plus.35
-// @description  Macro local para PC y móvil con controles táctiles y filtro de colores disponibles
+// @version      Plus.36
+// @description  Macro para WPlace en PC y móvil: plantillas por selección, captura, coordenadas y AutoDraw
 // @author       Ike
 // @license      MPL-2.0
 // @run-at       document-start
@@ -71,10 +71,7 @@ function macrosharkColorSequence(points, random = Math.random) {
 function macrosharkNormalizeStrategy(mode) {
   return MACROSHARK_STRATEGIES.some(m => m[0] === mode) ? mode : typeof mode === 'string' && mode.startsWith('HUMAN_') ? 'HUMANIZED' : 'COLOR_SEQUENCE';
 }
-function eo(o, a, l) {
-  let i = o[l];
-  return o[l] = o[a], o[a] = i, o;
-}
+
 function zo(o, a) {
   let l = o.indexOf(a);
   if (l !== -1) o.splice(l, 1);
@@ -89,17 +86,13 @@ function Z(o, a, l = ["error"], i = "addEventListener") {
     for (let c = 0; c < l.length; c++) o[i]?.(l[c], s);
   });
 }
-function R(o) {
-  return new Promise(a => setTimeout(a, o));
-}
+
 var G = "macroshark-settings",
   Zo = [];
 var Y = "macroshark:control-session-v5",
   Co = "macroshark:control-settings-v5",
   Go = "macroshark:local-device-id";
-function to() {
-  return null;
-}
+
 function wo() {
   return Po(localStorage, Co, {});
 }
@@ -359,8 +352,6 @@ ick Paint · Shift+F start auto farm · Shift+G stop auto farm",
       accessDeviceLimit: "Device limit reached for this serial key.",
       runtimeBetaRequiredTitle: "No special Tampermonkey version is required.",
       runtimeBetaRequiredBody: "No special Tampermonkey version is required.",
-      runtimeCookieRequiredTitle: "No special Tampermonkey version is required.",
-      runtimeCookieRequiredBody: "No special Tampermonkey version is required.",
       runtimeBetaInstall: "Continue",
       runtimeReload: "Reload",
       accountInfoTitle: "User information",
@@ -375,10 +366,6 @@ ick Paint · Shift+F start auto farm · Shift+G stop auto farm",
       settingsSerialValidatedAt: "Serial validated at",
       settingsLicenseOwner: "License owner",
       settingsDeviceLimit: "Device limit",
-      settingsCookieJ: "j token",
-      settingsCookieJDetected: "j token detected",
-      settingsCookieJNotDetected: "j token not detected",
-      settingsCookieSource: "Cookie source",
       settingsWplaceId: "WPlace ID",
       settingsWplaceName: "WPlace name",
       settingsDiscord: "Discord",
@@ -654,8 +641,6 @@ r auto farm",
       accessDeviceLimit: "Límite de dispositivos alcanzado para este serial.",
       runtimeBetaRequiredTitle: "No se requiere una versión especial de Tampermonkey.",
       runtimeBetaRequiredBody: "No se requiere una versión especial de Tampermonkey.",
-      runtimeCookieRequiredTitle: "No se requiere una versión especial de Tampermonkey.",
-      runtimeCookieRequiredBody: "No se requiere una versión especial de Tampermonkey.",
       runtimeBetaInstall: "Continuar",
       runtimeReload: "Recargar",
       accountInfoTitle: "Información del usuario",
@@ -670,10 +655,6 @@ r auto farm",
       settingsSerialValidatedAt: "Serial validado en",
       settingsLicenseOwner: "Dueño de licencia",
       settingsDeviceLimit: "Límite de dispositivos",
-      settingsCookieJ: "Token j",
-      settingsCookieJDetected: "Token j detectado",
-      settingsCookieJNotDetected: "Token j no detectado",
-      settingsCookieSource: "Origen de cookie",
       settingsWplaceId: "ID de WPlace",
       settingsWplaceName: "Nombre en WPlace",
       settingsDiscord: "Discord",
@@ -739,7 +720,7 @@ function U(o) {
   for (let a of o.querySelectorAll("[data-i18n-aria-label]")) a.setAttribute("aria-label", f(a.dataset.i18nAriaLabel));
   for (let a of o.querySelectorAll("[data-i18n-placeholder]")) a.setAttribute("placeholder", f(a.dataset.i18nPlaceholder));
 }
-class ao {
+class SharkDisposable {
   runOnDestroy = [];
   destroy() {
     for (let o = 0; o < this.runOnDestroy.length; o++) this.runOnDestroy[o]();
@@ -1075,7 +1056,7 @@ class SharkTaskQueue {
         queue: this,
         index,
         color: this.owner.pixels.indices[index],
-        position: new J(this.owner.bot, this.owner.position.globalX + index % w, this.owner.position.globalY + Math.floor(index / w))
+        position: new SharkMapPosition(this.owner.bot, this.owner.position.globalX + index % w, this.owner.position.globalY + Math.floor(index / w))
       };
     }
   }
@@ -1151,7 +1132,7 @@ function macrosharkReadPixelColor(data, offset, cache, exactColor) {
   if (cache.size < 65536) cache.set(key, color);
   return color;
 }
-class q {
+class SharkPixelData {
   bot;
   image;
   width;
@@ -1179,7 +1160,7 @@ class q {
         image.onerror = () => reject(new Error('No se pudo cargar la imagen guardada.'));
         image.src = source;
       });
-      const result = new q(o, image, a.width, a.exactColor, a.indexed);
+      const result = new SharkPixelData(o, image, a.width, a.exactColor, a.indexed);
       if (a.exactColor) {
         result.canvas.width = result.canvas.height = 1;
         image.src = '';
@@ -1399,10 +1380,10 @@ function V(element) {
     y: NaN
   };
 }
-class J {
+class SharkMapPosition {
   bot;
   static fromJSON(o, a) {
-    return new J(o, ...a);
+    return new SharkMapPosition(o, ...a);
   }
   static fromScreenPosition(o, a) {
     let {
@@ -1410,7 +1391,7 @@ class J {
       pixelSize: i,
       anchorWorldPosition: r
     } = o.findAnchorsForScreen(a);
-    return new J(o, r.x + (a.x - l.x) / i | 0, r.y + (a.y - l.y) / i | 0);
+    return new SharkMapPosition(o, r.x + (a.x - l.x) / i | 0, r.y + (a.y - l.y) / i | 0);
   }
   globalX = 0;
   globalY = 0;
@@ -1492,43 +1473,20 @@ class J {
     l[this.x] = o;
   }
   scrollScreenTo() {
-    let {
-      x: o,
-      y: a
-    } = this.toScreenPosition();
-    return this.bot.moveMap({
-      x: o - window.innerWidth / 3,
-      y: a - window.innerHeight / 3
-    }).catch(error => {
-      this.bot.widget.status = error.message;
-      return false;
-    });
-  }
+      return this.bot.focusMapPosition(this).catch(error => {
+        this.bot.widget.status = error.message;
+        return false;
+      });
+    }
   clone() {
-    return new J(this.bot, this.tileX, this.tileY, this.x, this.y);
+    return new SharkMapPosition(this.bot, this.tileX, this.tileY, this.x, this.y);
   }
   toJSON() {
     return [this.globalX, this.globalY];
   }
 }
-function xa(o) {
-  let a = [];
-  for (let {
-    x: l,
-    y: i
-  } of o.iterate) {
-    let r = o.pixels[i]?.[l] ?? 0;
-    if (o.disabledColors.has(r)) continue;
-    let s = o.readMapColor(l, i);
-    if (r !== s && (o.drawTransparentPixels || r !== 0)) a.push({
-      x: l,
-      y: i,
-      color: r
-    });
-  }
-  return a;
-}
-class S extends ao {
+
+class SharkImage extends SharkDisposable {
   bot;
   position;
   pixels;
@@ -1542,6 +1500,7 @@ class S extends ao {
   displayName;
   nativeOverlayId = '';
   nativeOverlayRevision = 0;
+  nativeImageSignature = ''; 
   paintSpeed = 1;
   confirmPaint = true;
   autoDrawConfig = null;
@@ -1549,10 +1508,11 @@ class S extends ao {
   static PREVIEW_MASK_BASE_WIDTH = 96;
   static PREVIEW_MASK_BASE_HEIGHT = 96;
   static async fromJSON(o, a) {
-    const image = new S(o, J.fromJSON(o, a.position), await q.fromJSON(o, a.pixels), a.strategy, a.opacity, a.drawTransparentPixels, a.drawColorsInOrder, a.skipUnavailableColors, a.colors, a.lock);
+    const image = new SharkImage(o, SharkMapPosition.fromJSON(o, a.position), await SharkPixelData.fromJSON(o, a.pixels), a.strategy, a.opacity, a.drawTransparentPixels, a.drawColorsInOrder, a.skipUnavailableColors, a.colors, a.lock);
     image.displayName = typeof a.displayName === 'string' ? a.displayName : '';
     image.nativeOverlayId = typeof a.nativeOverlayId === 'string' ? a.nativeOverlayId : '';
     image.nativeOverlayRevision = Number.isFinite(a.nativeOverlayRevision) ? a.nativeOverlayRevision : 0;
+    image.nativeImageSignature = typeof a.nativeImageSignature === 'string' ? a.nativeImageSignature : '';
     image.paintSpeed = [1, 2, 4].includes(a.paintSpeed) ? a.paintSpeed : 1;
     image.confirmPaint = a.confirmPaint !== false;
     image.autoDrawConfig = a.autoDrawConfig && typeof a.autoDrawConfig === 'object' ? a.autoDrawConfig : null;
@@ -1634,21 +1594,36 @@ class S extends ao {
       $topbar: ".wtopbar",
       $wrapper: ".wrapper"
     }), this.$resetSizeSpan = this.$resetSize.querySelector("span"), this.$canvas = this.pixels.canvas, this.$wrapper.prepend(this.pixels.canvas), document.body.append(this.$colorsDialog, this.$previewDialog), this.registerEvent(this.$strategy, "change", () => {
-      this.strategy = this.$strategy.value, this.update(), this.$previewStrategySelect.value = this.strategy, H(this.bot), void 0;
+      this.strategy = this.$strategy.value;
+      this.update();
+      this.$previewStrategySelect.value = this.strategy;
+      H(this.bot);
     }), this.registerEvent(this.$previewStrategySelect, "change", () => {
-      this.$strategy.value = this.$previewStrategySelect.value, this.$strategy.dispatchEvent(new Event("change")), this.renderStrategyPreviewSamples(), void 0;
+      this.$strategy.value = this.$previewStrategySelect.value;
+      this.$strategy.dispatchEvent(new Event("change"));
+      this.renderStrategyPreviewSamples();
     }), this.registerEvent(this.$opacity, "input", () => {
       this.opacity = this.$opacity.valueAsNumber, this.$opacity.style.setProperty("--val", this.opacity + "%"), this.update(), H(this.bot);
     }), this.registerEvent(this.$opacity, "change", () => {}), this.$opacity.style.setProperty("--val", this.opacity + "%"), this.registerEvent(this.$resetSize, "click", () => {
-      this.pixels.width = this.pixels.image.naturalWidth, this.pixels.update(), this.updateColors(), this.update(), H(this.bot), void 0;
+      this.pixels.width = this.pixels.image.naturalWidth;
+      this.pixels.update();
+      this.updateColors();
+      this.update();
+      H(this.bot);
     }), this.registerEvent(this.$drawTransparent, "click", () => {
-      this.drawTransparentPixels = this.$drawTransparent.checked, H(this.bot), void 0;
+      this.drawTransparentPixels = this.$drawTransparent.checked;
+      H(this.bot);
     }), this.registerEvent(this.$skipUnavailable, "click", () => {
-      this.skipUnavailableColors = this.$skipUnavailable.checked, this.updateTasks(), H(this.bot), void 0;
+      this.skipUnavailableColors = this.$skipUnavailable.checked;
+      this.updateTasks();
+      H(this.bot);
     }), this.registerEvent(this.$drawColorsInOrder, "click", () => {
-      this.drawColorsInOrder = this.$drawColorsInOrder.checked, H(this.bot), void 0;
+      this.drawColorsInOrder = this.$drawColorsInOrder.checked;
+      H(this.bot);
     }), this.registerEvent(this.$lock, "click", () => {
-      this.lock = !this.lock, this.update(), H(this.bot), void 0;
+      this.lock = !this.lock;
+      this.update();
+      H(this.bot);
     }), this.registerEvent(this.$delete, "click", () => {
       this.destroy();
     }), this.registerEvent(this.$openColors, "click", () => {
@@ -1670,11 +1645,14 @@ class S extends ao {
     }), this.registerEvent(this.$previewDialog, "click", t => {
       if (t.target === this.$previewDialog) this.closeDialog(this.$previewDialog);
     }), this.registerEvent(this.$colorSearch, "input", () => {
-      this.updateColors(), void 0;
+      this.updateColors();
     }), this.registerEvent(this.$toggleAllColors, "change", () => {
       let t = !this.$toggleAllColors.checked;
       for (let w of this.colors) w.disabled = t || void 0;
-      this.syncColorBulkToggle(), this.updateTasks(), this.updateColors(), H(this.bot), void 0;
+      this.syncColorBulkToggle();
+      this.updateTasks();
+      this.updateColors();
+      H(this.bot);
     }), this.registerEvent(this.$export, "click", () => {
       this.export();
     }), this.registerEvent(this.$topbar, "mousedown", this.moveStart.bind(this)), this.registerEvent(this.$canvas, "mousedown", this.moveStart.bind(this)), this.registerEvent(document, "mouseup", this.moveStop.bind(this)), this.registerEvent(document, "mousemove", this.move.bind(this));
@@ -1767,6 +1745,7 @@ class S extends ao {
   toJSON() {
     return {
       pixels: this.pixels.toJSON(),
+      galleryPreview: macrosharkGalleryPreview(this),
       position: this.position.toJSON(),
       strategy: this.strategy,
       opacity: this.opacity,
@@ -1778,6 +1757,7 @@ class S extends ao {
       displayName: this.displayName || '',
       nativeOverlayId: this.nativeOverlayId,
       nativeOverlayRevision: this.nativeOverlayRevision,
+      nativeImageSignature: this.nativeImageSignature,
       paintSpeed: this.paintSpeed,
       confirmPaint: this.confirmPaint,
       autoDrawConfig: this.autoDrawConfig,
@@ -1858,7 +1838,8 @@ class S extends ao {
           gy = this.position.globalY + y,
           key = Math.floor(gx / k) + '/' + Math.floor(gy / k);
         if (!reset && this.bot.changedTiles && !dirty.has(key)) continue;
-        const current = this.bot.mapsCache.get(key)?.pixels[gy % k]?.[gx % k];
+        const server = this.bot.mapsCache.get(key)?.pixels[gy % k]?.[gx % k];
+        const current=this.bot.stagedPixels.get(key+'/'+(gx%k)+'/'+(gy%k))?.color??server;
         this.tasks.setPending(index, (color !== 0 || this.drawTransparentPixels) && !disabled.has(color) && Number.isInteger(current) && current >= 0 && current !== color);
       }
     }
@@ -1903,7 +1884,7 @@ class S extends ao {
       const y = tileY * k + entry.y - this.position.globalY;
       if (x < 0 || y < 0 || x >= width || y >= height) continue;
       const index = y * width + x;
-      if (this.pixels.indices[index] === entry.color && this.tasks?.mask?.[index] !== 1) pending++;
+      if (this.bot.mapsCache.get(entry.tile)?.pixels[entry.y]?.[entry.x] !== entry.color && this.pixels.indices[index] === entry.color && this.tasks?.mask?.[index] !== 1) pending++;
     }
     return Math.min(width * height, pending);
   }
@@ -1999,7 +1980,7 @@ class S extends ao {
   paintStrategyPreview(o, a) {
     let l = o.getContext("2d");
     if (!l) return;
-    l.fillStyle = "#0f1526", l.fillRect(0, 0, o.width, o.height);
+    l.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--ms-preview-surface").trim() || getComputedStyle(this.$previewDialog).backgroundColor, l.fillRect(0, 0, o.width, o.height);
     let i = this.getSampledImagePreviewData(),
       r = this.getCachedPreviewSequence(a, i.mask, i.width, i.height),
       s = Math.min(o.width / i.width, o.height / i.height),
@@ -2014,7 +1995,7 @@ class S extends ao {
         return this.previewAnimationHandles.add(m), m;
       },
       t = u => {
-        l.fillStyle = "#0f1526", l.fillRect(0, 0, o.width, o.height);
+        l.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--ms-preview-surface").trim() || getComputedStyle(this.$previewDialog).backgroundColor, l.fillRect(0, 0, o.width, o.height);
         for (let m = 0; m < Math.min(u, r.length); m++) {
           let z = r[m],
             M = i.colors.get(`${z.x}:${z.y}`) ?? 0;
@@ -2088,13 +2069,13 @@ class S extends ao {
         }))
       }
     };
-    return [...S.prototype.strategyPositionIterator.call(context)].filter(p => points.has(p.x + ':' + p.y));
+    return [...SharkImage.prototype.strategyPositionIterator.call(context)].filter(p => points.has(p.x + ':' + p.y));
   }
   getSampledImagePreviewData() {
     let o = this.pixels.width,
       a = this.pixels.height,
-      l = S.PREVIEW_MASK_BASE_WIDTH,
-      i = S.PREVIEW_MASK_BASE_HEIGHT,
+      l = SharkImage.PREVIEW_MASK_BASE_WIDTH,
+      i = SharkImage.PREVIEW_MASK_BASE_HEIGHT,
       r = Math.min(1, l / Math.max(1, o), i / Math.max(1, a)),
       s = Math.max(1, Math.round(o * r)),
       c = Math.max(1, Math.round(a * r)),
@@ -2213,7 +2194,8 @@ class S extends ao {
           i.disabled = i.disabled ? void 0 : !0, n.classList.toggle("disabled", Boolean(i.disabled));
           let e = n.querySelector(".state");
           if (e) e.textContent = i.disabled || this.skipUnavailableColors && d ? f("disabled") : f("enabled");
-          this.syncColorBulkToggle(), H(this.bot), void 0;
+          this.syncColorBulkToggle();
+          H(this.bot);
         },
         n = document.createElement("button");
       n.className = `color-chip ${t ? "disabled" : ""}`, n.draggable = !0, n.setAttribute("aria-label", `${f("overlayColors")} #${l + 1}: ${g.toUpperCase()}`), n.innerHTML = `<span class="order-index">#${l + 1}</span>
@@ -2394,18 +2376,22 @@ class S extends ao {
   }
   moveStart(o) {
     if (o.button !== 0) return;
-    if (o.preventDefault(), o.stopPropagation(), !this.lock) this.moveInfo = {
+    if (o.preventDefault(), o.stopPropagation(), !this.lock) {this.moveInfo = {
       globalX: this.position.globalX,
       globalY: this.position.globalY,
       clientX: o.clientX,
       clientY: o.clientY
-    }, void 0;
+    };}
   }
   moveStop() {
     if (this.moveInfo) {
       let o = this.moveInfo,
         a = o.width !== void 0 || o.height !== void 0 ? "resize" : "move";
-      this.moveInfo = void 0, this.position.updateAnchor(), this.pixels.update(), this.updateColors(), H(this.bot), void 0;
+      this.moveInfo = void 0;
+      this.position.updateAnchor();
+      this.pixels.update();
+      this.updateColors();
+      H(this.bot);
     }
   }
   move(o) {
@@ -2491,18 +2477,10 @@ class S extends ao {
     }
   }
   export() {
-    const record = macrosharkToWplace(this.pixels.canvas, this.displayName || 'MacroShark', this.position, this.opacity, this.lock);
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }));
-    link.href = url;
-    link.download = (this.displayName || 'MacroShark').replace(/[^\w\- ]/g, '_') + '.wplace';
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }
+      this.bot.widget.openImageExport(this);
+    }
 }
-var vo = `/* stylelint-disable declaration-no-important */
+var SHARK_STYLES = `/* stylelint-disable declaration-no-important */
 /* stylelint-disable plugin/no-low-performance-animation-properties */
 /* stylelint-disable no-descending-specificity */
 /* stylelint-disable declaration-block-single-line-max-declarations */
@@ -5247,7 +5225,7 @@ html[data-game-ui] .macroshark-capture-panel,html[data-game-ui] .macroshark-capt
 .macroshark-quick-rail .shark-mini-grid>button:disabled{opacity:.45;cursor:not-allowed}
 html[data-game-ui] .macroshark-quick-rail .shark-mini-grid>button{border:2px solid var(--ms-border);border-radius:2px;box-shadow:3px 3px 0 rgb(0 0 0 / 40%)}
 .wwidget:not(.shark-canvas-hidden){z-index:1005}
-/* Plus.35: Canvas branding and a compact, balanced image detail. */
+/* Plus.34: Canvas branding and a compact, balanced image detail. */
 .wwidget .shark-canvas-brand{display:flex;align-items:center;gap:9px;min-width:0;margin-right:auto}
 .wwidget .shark-canvas-brand img{width:34px;height:34px;object-fit:contain;flex:none}
 .wwidget .shark-canvas-brand .widget-section-title{margin:0!important;white-space:nowrap}
@@ -5280,7 +5258,7 @@ html[data-game-ui] .macroshark-quick-rail .shark-mini-grid>button{border:2px sol
 @media(max-width:700px){.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .image-controls{grid-column:1!important;grid-row:auto!important}.wwidget .shark-detail-active .image-controls{grid-template-columns:repeat(3,minmax(0,1fr))!important}.wwidget .shark-canvas-brand-name{font-size:13px}.wwidget .shark-canvas-brand img{width:28px;height:28px}}
 @media(max-width:420px){.wwidget .shark-canvas-brand{gap:5px}.wwidget .shark-canvas-brand-name{font-size:12px}.wwidget .shark-canvas-brand .widget-section-title{font-size:13px}}
 html[data-game-ui] .wimage .wrapper>.resize::after{border-radius:2px;box-shadow:2px 2px 0 rgb(0 0 0 / 60%)}
-/* Plus.35: one centered Canvas workspace with native-style progress and image actions. */
+/* Plus.34: one centered Canvas workspace with native-style progress and image actions. */
 .wwidget.wopen{width:0!important;height:0!important;min-height:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none}
 .wwidget.wopen.shark-subpanel-open{width:0!important;height:0!important;min-height:0!important}
 .wwidget.wopen>.title,.wwidget .shark-main-actions,.wwidget .shark-settings-storage,.wwidget.wopen>.wform>.wstatus{display:none!important}
@@ -5313,6 +5291,110 @@ html[data-game-ui] .wimage .wrapper>.resize::after{border-radius:2px;box-shadow:
 @media(max-width:700px){.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .widget-section-images>.widget-image-actions .shark-gallery-search{grid-column:1/-1}.wwidget .widget-section-images .shark-canvas-brand{margin-right:auto}.wwidget .shark-detail-active .shark-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .shark-detail-active .shark-image-select{grid-column:1/-1}.wwidget .shark-detail-active .preview,.wwidget .shark-detail-active .shark-card-heading,.wwidget .shark-detail-active .image-progress,.wwidget .shark-detail-active .shark-image-settings,.wwidget .shark-detail-active .image-controls{grid-column:1!important;grid-row:auto!important}}
 @media(max-width:420px){.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.wwidget .widget-section-images>.widget-image-actions .shark-sync-wplace span{font-size:11px}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:wrap}.wwidget .widget-section-images .shark-canvas-brand{flex:1 1 100%}.wwidget .widget-section-images .header-config{width:30px;height:30px;min-height:30px}}
 html[data-game-ui] .wwidget .shark-progress-track,html[data-game-ui] .wwidget .shark-image-actions button{border-radius:2px!important}
+
+/* Plus.36: shared theme for detached dialogs and per-image settings. */
+:root{--ms-preview-surface:var(--color-base-200,#f2f7fe)}
+.wwidget,.macroshark-modal,.macroshark-guide,.wimage{--text:var(--ms-ink);--bg:var(--ms-surface);--panel:var(--ms-raised);--border:var(--ms-border);--accent:var(--ms-accent);--text-invert:var(--ms-on-accent);--main:var(--ms-accent);--main-hover:var(--ms-accent);--hover:var(--ms-control);--background:var(--ms-surface);--background-hover:var(--ms-raised);--background-disabled:var(--ms-control);--surface-card:var(--ms-raised);--surface-card-hover:var(--ms-control);--input-bg:var(--ms-surface);--input-border:var(--ms-border);--input-hover:var(--ms-raised);--ring:var(--ms-accent);--glow-main:transparent;--action-download:var(--ms-ink);--action-edit:var(--ms-ink);--action-delete:var(--ms-ink);--action-palette:var(--ms-ink);--action-lock:var(--ms-ink)}
+.wwidget [hidden],.macroshark-modal [hidden],.shark-auto-countdown[hidden]{display:none!important}
+.macroshark-modal .color-chip,.macroshark-modal .preview-card,.macroshark-modal .color-tools,.macroshark-modal .toggle-row,.macroshark-modal .preview-strategy-row,.macroshark-modal .strategy-controls,.macroshark-modal .bulk-toggle{background:var(--ms-raised)!important;background-image:none!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important;box-shadow:none!important}
+.macroshark-modal .color-chip .order-index,.macroshark-modal .color-chip .hex,.macroshark-modal .color-chip .buy-chip{background:var(--ms-control)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important}
+.macroshark-modal .color-chip .swatch{background:var(--swatch-color)!important}
+.macroshark-modal p,.macroshark-modal label,.macroshark-modal strong,.macroshark-modal .meta,.macroshark-modal .drag,.macroshark-modal .color-chip .premium.on,.macroshark-guide p,.macroshark-guide small{color:var(--ms-ink)!important}
+.macroshark-modal option,.wwidget option{background:var(--ms-surface)!important;color:var(--ms-ink)!important}
+.macroshark-modal input,.macroshark-modal select,.wwidget input[type=checkbox]{accent-color:var(--ms-accent)}
+.macroshark-modal input[type=checkbox]:checked{background-color:var(--ms-accent)!important;border-color:var(--ms-accent)!important}
+.macroshark-modal .toggle-track,.macroshark-modal .toggle-slider{background:var(--ms-control)!important;border-color:var(--ms-border)!important}
+.macroshark-modal input:checked+.toggle-track,.macroshark-modal input:checked+.toggle-slider{background:var(--ms-accent)!important}
+.macroshark-modal .macroshark-switch-row{background:var(--ms-raised)!important;border-color:var(--ms-border)!important;color:var(--ms-ink)!important}
+.macroshark-modal .macroshark-switch-slider{background:var(--ms-control)!important;border-color:var(--ms-border)!important}
+.macroshark-modal .macroshark-switch-slider::after{background:var(--ms-on-accent)!important}
+.macroshark-modal .macroshark-switch input:checked+.macroshark-switch-slider{background:var(--ms-accent)!important;border-color:var(--ms-accent)!important}
+.macroshark-modal .color-chip.drag-target{border-color:var(--ms-accent)!important;box-shadow:0 0 0 1px var(--ms-accent)!important}
+.wwidget button .icon,.wwidget button i,.macroshark-modal button .icon{color:inherit!important}
+.macroshark-modal .preview-canvas{background:var(--ms-preview-surface)!important;border-color:var(--ms-border)!important}
+.wwidget select:focus,.macroshark-modal select:focus,.macroshark-modal input:focus{outline-color:var(--ms-accent)!important;border-color:var(--ms-accent)!important}
+.wwidget,.wwidget *,.macroshark-modal,.macroshark-modal *,.macroshark-guide{scrollbar-color:color-mix(in srgb,var(--ms-ink) 40%,transparent) var(--ms-raised)}
+.macroshark-modal::-webkit-scrollbar-track,.macroshark-modal *::-webkit-scrollbar-track,.wwidget *::-webkit-scrollbar-track{background:var(--ms-raised)!important}
+.macroshark-modal::-webkit-scrollbar-thumb,.macroshark-modal *::-webkit-scrollbar-thumb,.wwidget *::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ms-ink) 40%,transparent)!important;border-color:var(--ms-raised)!important}
+.wwidget .macroshark-reference-toggle{gap:5px}
+.wwidget,.macroshark-modal,.macroshark-guide{font-family:var(--font-sans,Geist,system-ui,sans-serif)}
+.wwidget .shark-card-opacity{accent-color:var(--ms-accent);border-color:var(--ms-border)!important;background:var(--ms-surface)!important}
+.wwidget input[type=range]::-webkit-slider-thumb{background:var(--ms-accent)!important;border-color:var(--ms-border)!important}
+.wwidget input[type=range]::-moz-range-thumb{background:var(--ms-accent)!important;border-color:var(--ms-border)!important}
+.wwidget .image-controls i{color:inherit!important}
+.fa-gauge-high{--macroshark-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M4 18a9 9 0 1 1 16 0M12 13l4-5M6 12H4m8-7V3m6 9h2M5 18h14'/%3E%3C/svg%3E")}
+.fa-check{--macroshark-icon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E")}
+.wwidget .macroshark-reference-toggle::before{content:none!important}
+.wwidget .shark-auto-inline{grid-column:2!important;grid-row:4/7!important;z-index:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;align-self:start;align-content:start;margin:0;padding:12px;min-width:0;border:1px solid var(--ms-border);border-radius:16px;background:var(--ms-raised);color:var(--ms-ink);font-size:12px}
+.wwidget .shark-auto-inline .shark-auto-heading{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+.wwidget .shark-auto-inline label{display:grid;gap:6px;min-width:0;padding:0;margin:0}
+.wwidget .shark-auto-inline .shark-auto-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px}
+.wwidget .shark-auto-inline input:not([type=checkbox]),.wwidget .shark-auto-inline select{box-sizing:border-box;width:100%;min-width:0;min-height:36px;padding:6px 8px;font:inherit;border:1px solid var(--ms-border)}
+.wwidget .shark-auto-inline .shark-random-label{display:flex;align-items:center;gap:6px;grid-column:1/-1}
+.wwidget .shark-auto-inline label.shark-random-label{background:var(--ms-control)!important;color:var(--ms-ink)!important;border-color:var(--ms-border)!important}
+.wwidget .shark-auto-inline p,.wwidget .shark-auto-inline output{grid-column:1/-1;margin:0;line-height:1.45}
+.wwidget .shark-auto-inline button[type=submit]{grid-column:1/-1;min-height:36px;background:var(--ms-accent)!important;color:var(--ms-on-accent)!important}
+.wwidget .shark-auto-inline .shark-auto-close{width:28px;min-height:28px;padding:0;font-size:20px}
+.wwidget .shark-detail-active:has(.shark-auto-inline)>.image-progress,.wwidget .shark-detail-active:has(.shark-auto-inline)>.shark-image-settings{visibility:hidden}
+.macroshark-quick-rail .shark-mini-auto{position:relative;overflow:visible}
+.shark-auto-countdown{position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%);display:block;padding:5px 8px;border:1px solid var(--ms-border);border-radius:999px;background:var(--ms-surface);color:var(--ms-ink);font:600 12px/1.25 system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;box-shadow:0 2px 7px rgb(0 0 0 / 20%)}
+.macroshark-native-notice:not(.shark-inline-notice){max-width:calc(100vw - 128px)!important}
+.wwidget .widget-section-images>.shark-inline-notice{position:relative!important;inset:auto!important;transform:none!important;width:auto!important;max-width:none!important;margin:8px 12px!important;box-shadow:none!important;border:1px solid var(--ms-border)!important;border-radius:12px!important;pointer-events:auto}
+html[data-game-ui] .wwidget .widget-section-images>.shark-inline-notice{border-radius:2px!important}
+.shark-export-dialog{width:min(420px,calc(100vw - 20px))!important;box-sizing:border-box;resize:none!important}
+.shark-export-dialog form{display:grid;gap:12px;padding-top:12px}
+.shark-export-dialog label{display:grid;gap:6px}
+.shark-export-dialog select{width:100%;min-width:0;min-height:42px;padding:8px}
+.shark-export-dialog form button{min-height:42px;background:var(--ms-accent)!important;color:var(--ms-on-accent)!important}
+.macroshark-modal .color-chip,.macroshark-modal .preview-card{border-radius:14px!important}
+html[data-game-ui] .macroshark-modal .color-chip,html[data-game-ui] .macroshark-modal .preview-card,html[data-game-ui] .wwidget .shark-auto-inline,html[data-game-ui] .shark-auto-countdown{border-radius:2px!important}
+@media(max-width:700px){.wwidget .shark-auto-inline{grid-column:1!important;grid-row:auto!important;margin:0}.wwidget .shark-detail-active:has(.shark-auto-inline)>.image-progress,.wwidget .shark-detail-active:has(.shark-auto-inline)>.shark-image-settings{display:none!important}.wwidget .widget-section-images>.widget-section-summary{flex-wrap:wrap;min-height:44px}.wwidget .shark-canvas-brand{flex:1 1 auto!important}.wwidget .macroshark-reference-toggle{flex:0 0 30px!important;min-width:30px!important;width:30px!important}.wwidget .shark-detail-active .shark-card-heading{min-height:34px}.wwidget .shark-auto-inline{grid-template-columns:1fr}.shark-auto-inline>label{grid-column:1/-1}}
+/* Plus.36: global map capture, free map gestures and uncropped preview. */
+.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:minmax(0,1fr) 150px 116px 180px}
+.wwidget .shark-capture-global{display:flex;align-items:center;justify-content:center;gap:6px;min-width:40px;font-size:12px}
+.wwidget .shark-detail-active .shark-image-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
+
+.shark-deferred-card .preview{display:flex;align-items:center;justify-content:center}.shark-template-placeholder{font:64px/1 system-ui;opacity:.5}.shark-template-state{font:12px/1.4 system-ui;margin:8px 0 0;color:var(--ms-ink)}.shark-template-loading::before{content:'';display:inline-block;width:12px;height:12px;margin-right:7px;border:2px solid var(--ms-border);border-top-color:var(--ms-accent);border-radius:50%;vertical-align:-3px;animation:shark-template-spin .8s linear infinite}@keyframes shark-template-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.shark-template-loading::before{animation:none}}
+.macroshark-capture-picker{pointer-events:none!important;touch-action:auto!important}
+.macroshark-capture-picker span{max-width:calc(100vw - 110px);white-space:normal;line-height:1.35}
+.macroshark-capture-picker button{pointer-events:auto;min-height:32px;margin-left:8px;padding:4px 9px;border:1px solid var(--ms-border);border-radius:999px;background:var(--ms-control);color:var(--ms-ink);font:inherit}
+.macroshark-capture-panel .capture-preview{box-sizing:content-box;justify-self:center;width:100%;max-width:calc(100% - 2px);height:auto;min-height:0;max-height:none;overflow:hidden}
+.macroshark-capture-panel .capture-preview img{display:block;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain;image-rendering:pixelated}
+html[data-game-ui] .macroshark-capture-picker button{border-radius:2px}
+@media(max-width:700px){.wwidget .widget-section-images>.widget-image-actions{grid-template-columns:minmax(0,1fr) 40px minmax(0,1fr)}.wwidget .shark-capture-global span{display:none}.wwidget .shark-detail-active .shark-image-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.wwidget .shark-capture-global{overflow:hidden;white-space:nowrap}
+.macroshark-capture-panel .capture-save-actions{display:flex;flex-wrap:wrap;gap:8px}
+.macroshark-capture-panel .capture-save-actions>button{flex:1 1 140px;min-width:0}
+.macroshark-capture-panel .capture-save-actions [hidden]{display:none!important}
+.macroshark-photo-save{position:fixed;inset:8px;z-index:1008;overflow:auto;box-sizing:border-box;border:2px solid var(--ms-border);border-radius:24px;background:var(--ms-surface);color:var(--ms-ink);font:14px/1.5 system-ui,sans-serif;padding:12px;touch-action:auto}
+.macroshark-photo-save header{position:sticky;top:-12px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;background:var(--ms-surface)}
+.macroshark-photo-save p{margin:8px 0 16px}
+.macroshark-photo-save button{min-height:44px;padding:8px 16px;border:1px solid var(--ms-border);border-radius:999px;background:var(--ms-control);color:var(--ms-ink);font:inherit;cursor:pointer}
+.macroshark-photo-save img{display:block;margin:0 auto;width:auto;height:auto;max-width:100%;max-height:70dvh;object-fit:contain;image-rendering:pixelated;pointer-events:auto!important;touch-action:auto!important;-webkit-touch-callout:default!important;-webkit-user-select:auto!important;user-select:auto!important}
+html[data-game-ui] .macroshark-photo-save,html[data-game-ui] .macroshark-photo-save button{border-radius:2px}
+.macroshark-quick-rail[hidden]{display:none!important}
+.wwidget .widget-section-images{overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain}
+.macroshark-launcher>.shark-rail-toggle[aria-expanded="false"]{background:var(--ms-control)!important;border-color:var(--ms-border)!important;color:var(--ms-ink)!important}
+.wwidget .shark-detail-visual{display:contents}
+.wwidget .shark-paint-starts{display:none}
+.wwidget .shark-detail-active .shark-detail-visual{display:grid;gap:8px;align-content:start;min-width:0}
+.wwidget .shark-detail-active .shark-detail-visual>.preview{grid-column:1!important;grid-row:auto!important;align-self:start;min-height:0;height:150px;max-height:150px;margin:0}
+.wwidget .shark-detail-active .shark-detail-visual>.preview img{height:100%;width:100%;max-height:150px;object-fit:contain}
+.wwidget .shark-detail-active .shark-detail-visual>.image-controls{grid-column:1!important;grid-row:auto!important;margin:0}
+.wwidget .shark-detail-active .shark-paint-starts{display:grid;grid-template-columns:1fr;gap:6px;min-width:0}
+.wwidget .shark-paint-starts>button{display:flex;align-items:center;justify-content:center;gap:7px;min-height:42px;min-width:0;width:100%;padding:8px;font-size:12px;font-weight:600;line-height:1.25;white-space:normal}
+.wwidget .shark-paint-starts>button.shark-running{background:var(--ms-accent)!important;border-color:var(--ms-accent)!important;color:var(--ms-on-accent)!important}
+.wwidget .shark-detail-active .shark-card-heading{align-self:start;min-height:34px;margin:0;padding:0;line-height:1.25;min-width:0}
+@media(min-width:701px){.wwidget .images .shark-gallery-card.shark-detail-active{grid-template-rows:auto auto minmax(34px,max-content) max-content minmax(0,1fr)}.wwidget .shark-detail-active .shark-detail-visual{grid-column:1;grid-row:3/6}.wwidget .shark-auto-inline{grid-row:4/6!important}}
+@media(max-width:700px){.wwidget .shark-detail-active .shark-detail-visual{grid-column:1!important;grid-row:auto!important}.wwidget .shark-detail-active .shark-paint-starts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.wwidget .shark-image-coordinates{display:none}
+.wwidget .shark-detail-active>.shark-image-coordinates{display:grid;grid-template-columns:1fr 1fr;gap:8px;grid-column:2;grid-row:5;min-width:0}
+.shark-image-coordinates label{display:grid;gap:4px;font-size:11px;min-width:0}
+.shark-image-coordinates input,.shark-capture-coordinates input{width:100%;box-sizing:border-box;min-width:0;padding:8px;border:1px solid var(--ms-border);background:var(--ms-surface);color:var(--ms-ink);font:inherit}
+.shark-capture-coordinates{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+@media(min-width:701px){.wwidget .images .shark-gallery-card.shark-detail-active{grid-template-rows:auto auto minmax(34px,max-content) max-content max-content minmax(0,1fr)}.wwidget .shark-detail-active .shark-detail-visual{grid-row:3/7}.wwidget .shark-detail-active>.shark-image-settings{grid-row:6!important}.wwidget .shark-auto-inline{grid-row:4/7!important}}
+.wwidget .shark-detail-active:has(.shark-auto-inline)>.shark-image-coordinates{display:none}
+@media(max-width:700px){.wwidget .shark-detail-active>.shark-image-coordinates{grid-column:1;grid-row:auto;grid-template-columns:1fr}.shark-capture-coordinates{grid-template-columns:1fr}}
 `;
 class mo extends Error {
   name = "macrosharkError";
@@ -5449,7 +5531,7 @@ var yo = `<button class="wopen-button" aria-label="Toggle widget">\r
     <span class="widget-brand-text">MacroShark</span>\r
   </div>
   <button class="shark-check-updates header-config" type="button" title="Comprobar actualizaciones" aria-label="Comprobar actualizaciones"><span aria-hidden="true">↻</span></button>
-  <button class="shark-open-paint header-config" type="button" title="Configurar pintado" aria-label="Configurar pintado"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
+  <button hidden class="shark-open-paint header-config" type="button" title="Configurar pintado" aria-label="Configurar pintado"><i class="fa-solid fa-sliders" aria-hidden="true"></i></button>
   <button class="open-config header-config" type="button" title="Guía de MacroShark" aria-label="Guía de MacroShark"><span aria-hidden="true">?</span></button>\r
 </div>\r
 <div class="wform">\r
@@ -5470,8 +5552,8 @@ var yo = `<button class="wopen-button" aria-label="Toggle widget">\r
 <div class="shark-settings-storage" hidden><button class="draw" disabled><i class="fa-solid fa-pen-nib"></i><span>Dibujar</span></button><button class="autooverlay-start"><i class="fa-solid fa-play"></i><span>Iniciar AutoDraw</span></button><button class="shark-open-canvas" type="button"><i class="fa-solid fa-images" aria-hidden="true"></i><span>Canvas</span></button><div class="shark-paint-settings"><button class="draw-and-paint" disabled type="button" aria-pressed="false"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Pintar automáticamente</span><span class="shark-auto-state">Apagado</span></button><label class="shark-pixel-limit">Píxeles por tanda: <output class="shark-pixel-value">Todos disponibles</output><input class="shark-pixel-range" type="range" min="1" max="1" value="1" step="1" aria-label="Píxeles por tanda"></label>\r<label class="shark-random-label"><input class="shark-random-quantity" type="checkbox"> Aleatorizar cantidad</label><p class="shark-random-hint">Desactivado: usa el límite elegido.</p></div></div>
 <section class="widget-section widget-section-images">
     <div class="widget-section-summary">
-      <div class="shark-canvas-brand"><img class="shark-canvas-logo" alt="" aria-hidden="true"><strong class="shark-canvas-brand-name">MacroShark</strong><strong class="widget-section-title">Canvas</strong></div><span class="shark-gallery-count"></span>
-      <button type="button" class="toggle-overlay shark-overlay-compact" title="Ocultar/mostrar overlays" aria-label="Ocultar/mostrar overlays"><i class="fa-solid fa-layer-group"></i></button><button type="button" class="macroshark-reference-toggle" aria-pressed="false" title="Referencia visual para pintar a mano"><span>Vista previa</span></button>
+      <div class="shark-canvas-brand"><img class="shark-canvas-logo" alt="" aria-hidden="true"><strong class="shark-canvas-brand-name">MacroShark</strong></div><span class="shark-gallery-count"></span>
+      <button type="button" class="toggle-overlay shark-overlay-compact" title="Ocultar/mostrar overlays" aria-label="Ocultar/mostrar overlays"><i class="fa-solid fa-layer-group"></i></button><button type="button" class="macroshark-reference-toggle" aria-pressed="false" title="Referencia visual para pintar a mano"><i class="fa-solid fa-eye" aria-hidden="true"></i><span>Vista previa</span></button>
       <button class="shark-hide-canvas" type="button" title="Ocultar panel de imágenes" aria-label="Ocultar panel de imágenes"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <div class="widget-image-actions">\r
@@ -5487,7 +5569,7 @@ var yo = `<button class="wopen-button" aria-label="Toggle widget">\r
 var oa = "macroshark:overlay-hidden",
   ia = "macroshark:auto-overlay-config",
   Ea = "data:image/webp;base64,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";
-class jo extends ao {
+class SharkWidget extends SharkDisposable {
   bot;
   element = document.createElement("div");
   get status() {
@@ -5499,26 +5581,17 @@ class jo extends ao {
     if (message && /error|fall[oó]|pausa|cerrad|verificaci[oó]n|no se pudo|actualizad/i.test(message)) this.showNativeNotice(message);
   }
   showNativeNotice(message) {
-    if (this.lastNativeNotice === message && this.$nativeNotice?.isConnected) return;
-    this.lastNativeNotice = message;
-    this.$nativeNotice?.remove();
-    const notice = document.createElement('div');
-    notice.className = 'macroshark-native-notice';
-    notice.setAttribute('role', 'status');
-    const title = document.createElement('strong');
-    title.textContent = 'MacroShark';
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.textContent = '×';
-    close.setAttribute('aria-label', 'Cerrar aviso');
-    close.onclick = () => notice.remove();
-    const body = document.createElement('p');
-    body.textContent = message;
-    notice.append(title, close, body);
-    document.body.append(notice);
-    this.$nativeNotice = notice;
-    window.setTimeout(() => notice.remove(), 10000);
-  }
+      this.$nativeNotice?.remove();
+      const notice=document.createElement('div');notice.className='macroshark-native-notice';notice.setAttribute('role','status');
+      const title=document.createElement('strong');title.textContent='MacroShark';
+      const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Cerrar aviso');close.onclick=()=>notice.remove();
+      const body=document.createElement('p');body.textContent=message;notice.append(title,close,body);
+      const workspace=this.element.querySelector('.widget-section-images');
+      if(this.open&&workspace){notice.classList.add('shark-inline-notice');workspace.querySelector('.widget-section-summary').after(notice);}
+      else document.body.append(notice);
+      this.$nativeNotice=notice;
+      setTimeout(()=>notice.remove(),10000);
+    }
   get open() {
     return this.element.classList.contains("wopen");
   }
@@ -5624,7 +5697,7 @@ class jo extends ao {
       passive: !1
     }), this.update(), this.syncOverlayVisibilityFromStorage(), this.loadAutoOverlayConfigFromStorage(), this.refreshAutoOverlayStatusText(), this.statusRefreshIntervalId = window.setInterval(() => {
       this.refreshAutoOverlayStatusText(), this.refreshProgress();
-    }, 1000), this.open = !1, window.setTimeout(() => {}, 2500), console.log("[MACROSHARK][Widget] Widget mounted minimized");
+    }, 1000), this.runOnDestroy.push(() => clearInterval(this.statusRefreshIntervalId)), this.open = !1, console.log("[MACROSHARK][Widget] Widget mounted minimized");
   }
   addImage() {
     this.$addImage.scrollIntoView({
@@ -5642,6 +5715,13 @@ class jo extends ao {
     this.$miniGrid = grid;
     this.$quickRail = document.createElement('div');
     this.$quickRail.className = 'macroshark-quick-rail';
+    this.$quickRail.id='macroshark-quick-rail';
+    this.quickActionsVisible=localStorage.getItem('macroshark:rail-expanded')!=='false';
+    this.$railToggle=document.createElement('button');this.$railToggle.type='button';this.$railToggle.className='wopen-button shark-rail-toggle';
+    this.$railToggle.setAttribute('aria-controls',this.$quickRail.id);
+    this.$railToggle.append(Object.assign(document.createElement('img'),{src:Ea,alt:''}));
+    this.$launcher.append(this.$railToggle);
+    this.$railToggle.onclick=()=>{if(this.updateRequired){macrosharkShowUpdate(this.updateRequired);return;}this.quickActionsVisible=!this.quickActionsVisible;localStorage.setItem('macroshark:rail-expanded',String(this.quickActionsVisible));this.syncQuickPanel();};
     this.$quickRail.append(grid);
     document.body.append(this.$quickRail);
     const make = (source, label, extraClass) => {
@@ -5665,6 +5745,8 @@ class jo extends ao {
       this.open = !this.open;
     });
     grid.prepend(this.$quickCanvas);
+    this.$quickCapture=make(this.$captureTemplate,'Captura','shark-mini-capture');
+    this.$quickCanvas.after(this.$quickCapture);
     this.element.querySelector('.shark-open-canvas').addEventListener('click', () => {
       this.open = !this.open;
     });
@@ -5678,7 +5760,8 @@ class jo extends ao {
     this.syncQuickPanel();
     this.positionLauncher();
     window.addEventListener('resize', () => this.positionLauncher());
-    window.setInterval(() => this.positionLauncher(), 1000);
+    const positionTimer = window.setInterval(() => this.positionLauncher(), 1000);
+    this.runOnDestroy.push(() => clearInterval(positionTimer));
   }
   syncCanvasPanel() {
     this.element.classList.toggle('shark-canvas-hidden', !this.canvasVisible);
@@ -5762,12 +5845,14 @@ class jo extends ao {
     canvas.style.removeProperty('right');
   }
   syncQuickPanel() {
-    if (!this.$miniGrid) return;
-    if (this.open) this.element.querySelector('.title').append(this.$wopenButton);
-    else this.$launcher.append(this.$wopenButton);
-    this.$launcher.hidden = this.open;
-    this.positionLauncher();
-    this.syncActionButtons();
+    if(!this.$miniGrid)return;
+    const expanded=this.quickActionsVisible!==false;
+    this.$quickRail.hidden=!expanded;this.$launcher.hidden=false;
+    this.$railToggle?.setAttribute('aria-expanded',String(expanded));
+    this.$railToggle?.setAttribute('aria-pressed',String(expanded));
+    this.$railToggle?.classList.toggle('shark-running',expanded);
+    if(this.$railToggle){const label=this.updateRequired?'Actualizar MacroShark':expanded?'Ocultar controles de MacroShark':'Mostrar controles de MacroShark';this.$railToggle.title=label;this.$railToggle.setAttribute('aria-label',label);}
+    this.positionLauncher();this.syncActionButtons();
   }
   requireUpdate(version) {
     this.updateRequired = version;
@@ -5781,7 +5866,9 @@ class jo extends ao {
     this.$wopenButton.replaceChildren(Object.assign(document.createElement('span'), { className: 'shark-update-symbol', textContent: '↻' }));
     this.$wopenButton.setAttribute('aria-label', 'Actualizar MacroShark');
     this.$wopenButton.title = 'Actualizar MacroShark';
+    this.$railToggle?.replaceChildren(Object.assign(document.createElement('span'), { className: 'shark-update-symbol', textContent: '↻' }));
     this.$launcher?.classList.add('shark-update-required');
+    this.syncQuickPanel();
   }
   positionLauncher() {
     if (!this.$launcher) return;
@@ -5800,27 +5887,23 @@ class jo extends ao {
     this.positionQuickActions(dockTop);
   }
   positionQuickActions(dockTop) {
-    if (!this.$quickRail) return;
-    const own = [this.element, this.$launcher, this.$quickRail];
-    const native = Array.from(document.querySelectorAll('button')).filter(node => !own.some(panel => panel?.contains(node))).map(node => ({ node, rect: node.getBoundingClientRect() })).filter(({ rect: r }) => r.width >= 30 && r.width <= 72 && r.height >= 30 && r.height <= 72 && r.left > innerWidth - 95 && r.right <= innerWidth + 2 && r.top >= 0 && r.bottom < Math.min(dockTop - 8, innerHeight * 0.8)).sort((a, b) => a.rect.bottom - b.rect.bottom);
-    const rail = native.at(-1)?.rect;
-    const size = Math.max(36, Math.min(52, rail?.width || (innerWidth <= 620 ? 44 : 40)));
-    const stackHeight = size * 4 + 8 * 3 + 8;
-    let x = rail ? rail.left + (rail.width - size) / 2 : innerWidth - size - 8;
-    let top = rail ? rail.bottom + 10 : Math.min(innerHeight * .38, 300);
-    if (rail && top + stackHeight > dockTop - 8) {
-      x = rail.left - size - 12;
-      top = Math.max(8, Math.min(rail.top, dockTop - stackHeight - 8));
+      if(!this.$quickRail)return;
+      // WPlace's fixed top-right control group, never map features or popups.
+      const roots=[...document.querySelectorAll('.top-safe-2.right-safe-2, [data-wplace-controls="top-right"]')];
+      const buttons=roots.flatMap(root=>[...root.querySelectorAll('button.btn,button[data-native-control]')]).filter(node=>!node.closest('.maplibregl-canvas-container,.maplibregl-marker,.maplibregl-popup,.wwidget,.macroshark-quick-rail,.macroshark-launcher,dialog'));
+      const native=buttons.map(node=>({node,rect:node.getBoundingClientRect()})).filter(({node,rect:r})=>getComputedStyle(node).visibility!=='hidden'&&r.width>=28&&r.width<=80&&r.height>=28&&r.height<=80&&r.right>innerWidth-100&&r.bottom<dockTop-8).sort((a,b)=>a.rect.bottom-b.rect.bottom);
+      const rail=native.at(-1)?.rect;
+      const size=Math.max(36,Math.min(52,rail?.width||(innerWidth<=620?44:40)));
+      const height=this.quickActionsVisible===false?size:size*5+32;
+      let x=rail?rail.left+(rail.width-size)/2:innerWidth-size-8;
+      let top=rail?rail.bottom+10:Math.min(innerHeight*.28,180);
+      if(top+height>dockTop-8){x-=size+12;top=Math.max(8,Math.min(rail?.top??top,dockTop-height-8));}
+      x=Math.max(8,Math.min(x,innerWidth-size-8));top=Math.max(8,Math.min(top,innerHeight-height-8));
+      this.$quickRail.style.setProperty('--shark-quick-size',size+'px');
+      this.$quickRail.style.left=x-4+'px';this.$quickRail.style.top=top+size+8+'px';
+      this.$launcher.style.setProperty('--shark-quick-size',size+'px');
+      this.$launcher.style.left=x+'px';this.$launcher.style.top=top+'px';
     }
-    x = Math.max(8, Math.min(x, innerWidth - size - 8));
-    top = Math.max(8, Math.min(top, innerHeight - stackHeight - 8));
-    this.$quickRail.style.setProperty('--shark-quick-size', size + 'px');
-    this.$quickRail.style.left = x - 4 + 'px';
-    this.$quickRail.style.top = top + size + 8 + 'px';
-    this.$launcher.style.setProperty('--shark-quick-size', size + 'px');
-    this.$launcher.style.left = x + 'px';
-    this.$launcher.style.top = top + 'px';
-  }
   registerMobileFileInputs() {
     const input = this.$addImage;
     input.addEventListener('change', () => {
@@ -5851,74 +5934,25 @@ class jo extends ao {
     }
     if (this.bot.mobileInitializationError) throw this.bot.mobileInitializationError;
   }
-  async syncNativeCanvas(button) {
-    if (button.disabled) return;
-    button.disabled = true;
-    try {
-      const records = await macrosharkReadNativeOverlays();
-      if (!records.length) {
-        this.showNativeNotice('WPlace no tiene Canvas locales importados en este navegador.');
-        return;
-      }
-      await this.waitForMobileReady();
-      await this.bot.updateColors();
-      let added = 0, updated = 0;
-      for (const record of records) {
-        const old = this.bot.images.find(image => image.nativeOverlayId === record.id);
-        const revision = Number(record.updatedAt) || 0;
-        if (old && old.nativeOverlayRevision === revision) continue;
-        const template = macrosharkParseWplace(JSON.stringify(record));
-        const image = new Image();
-        const loaded = Z(image, ['load'], ['error']);
-        image.src = template.url;
-        await loaded;
-        let position;
-        if (template.position) position = new J(this.bot, template.position.x, template.position.y);
-        else {
-          const screen = this.defaultImageScreenPosition();
-          const projection = this.bot.getMapProjection?.();
-          if (projection && [projection.scale, projection.worldX, projection.worldY, projection.screenX, projection.screenY].every(Number.isFinite) && projection.scale > 0) {
-            position = new J(this.bot, Math.round(projection.worldX + (screen.x - projection.screenX) / projection.scale), Math.round(projection.worldY + (screen.y - projection.screenY) / projection.scale));
-          } else {
-            await this.waitForStableViewportProjection();
-            position = J.fromScreenPosition(this.bot, screen);
-          }
-        }
-        const canvas = sharkSourceCanvas(image, template.displayWidth);
-        image.src = '';
-        const next = new S(this.bot, position, new q(this.bot, canvas), old?.strategy, old?.opacity ?? template.opacity, old?.drawTransparentPixels, old?.drawColorsInOrder, old?.skipUnavailableColors ?? true, [], old?.lock ?? template.locked);
-        if (old) {
-          const disabled = new Set(old.colors.filter(color => color.disabled).map(color => color.realColor));
-          for (const color of next.colors) color.disabled = disabled.has(color.realColor);
-          next.updateColors();
-        }
-        next.displayName = record.name || old?.displayName || 'Canvas de WPlace';
-        next.nativeOverlayId = record.id;
-        next.nativeOverlayRevision = revision;
-        next.paintSpeed = old?.paintSpeed ?? 1;
-        next.confirmPaint = old?.confirmPaint ?? true;
-        next.autoDrawConfig = old?.autoDrawConfig ?? null;
-        next.paintSelected = old?.paintSelected ?? false;
-        if (old) {
-          const index = this.bot.images.indexOf(old);
-          old.destroy();
-          this.bot.images.splice(index, 0, next);
-          if (this.selectedGalleryImage === old) this.selectedGalleryImage = next;
-          updated++;
-        } else {
-          this.bot.images.push(next);
-          added++;
-        }
-      }
-      await this.bot.readMap();
-      this.bot.updateTasks();
-      H(this.bot, true);
-      this.renderImagesList();
-      this.showNativeNotice(`Canvas actualizados: ${added} nuevos y ${updated} modificados.`);
-    } catch (error) {
-      this.showNativeNotice('No se pudieron actualizar los Canvas de WPlace: ' + (error?.message || error));
-    } finally { button.disabled = false; }
-  }
+  async syncNativeCanvas(button){
+  if(button.disabled||this.loadingGalleryImage)return;button.disabled=true;
+  try{
+    await this.waitForMobileReady();
+    const records=await macrosharkReadNativeOverlays(new Map(this.bot.images.filter(i=>i.nativeOverlayId).map(i=>[i.nativeOverlayId,i.nativeOverlayRevision])));
+    let added=0,updated=0;
+    for(const record of records){
+      const old=this.bot.images.find(i=>i.nativeOverlayId===record.id);if(record.unchanged)continue;
+      const template=macrosharkParseWplace(JSON.stringify(record));
+      const p=template.position||{x:0,y:0};
+      const raw={...(old?.toJSON()||{}),pixels:{url:template.url,width:template.displayWidth,height:Math.round(template.displayWidth*template.height/template.width)},position:[p.x,p.y],displayName:record.name||old?.displayName||'Canvas de WPlace',nativeOverlayId:record.id,nativeOverlayRevision:Number(record.updatedAt)||0,nativeImageSignature:record.sourceSignature||'',opacity:old?.opacity??template.opacity,lock:old?.lock??template.locked,paintSelected:!!old?.paintSelected};
+      if(old&&old.nativeImageSignature===raw.nativeImageSignature){raw.pixels=old.toJSON().pixels;raw.galleryPreview=old.toJSON().galleryPreview;}
+      const next=new SharkDeferredImage(this.bot,raw);
+      if(old){const at=this.bot.images.indexOf(old);old.destroy();this.bot.images.splice(at,0,next);if(this.selectedGalleryImage===old)this.selectedGalleryImage=null;updated++;}else{this.bot.images.push(next);added++;}
+    }
+    H(this.bot,true);this.renderImagesList();
+    this.showNativeNotice(records.length?'Canvas actualizados: '+added+' nuevos y '+updated+' modificados. Toca una imagen para cargarla.':'WPlace no tiene Canvas locales importados en este navegador.');
+  }catch(error){this.showNativeNotice('No se pudieron actualizar los Canvas: '+error.message);}finally{button.disabled=false;}
+}
   importMobileImage(file) {
     return console.log("[MACROSHARK][Widget] Add image flow started"), this.setDisabled("add-image", !0), this.run(f("taskAddingImage"), async () => {
       try {
@@ -5939,12 +5973,12 @@ class jo extends ao {
           await Z(image, ['load'], ['error']);
           if (image.naturalWidth !== template.width || image.naturalHeight !== template.height) throw Error('La imagen .wplace no coincide con sus dimensiones guardadas.');
           let position;
-          if (template.position) position = new J(this.bot, template.position.x, template.position.y);
+          if (template.position) position = new SharkMapPosition(this.bot, template.position.x, template.position.y);
           else {
             await this.waitForStableViewportProjection();
-            position = J.fromScreenPosition(this.bot, this.defaultImageScreenPosition());
+            position = SharkMapPosition.fromScreenPosition(this.bot, this.defaultImageScreenPosition());
           }
-          i = new S(this.bot, position, new q(this.bot, sharkSourceCanvas(image, template.displayWidth)), undefined, template.opacity, false, false, true, [], template.locked);
+          i = new SharkImage(this.bot, position, new SharkPixelData(this.bot, sharkSourceCanvas(image, template.displayWidth)), undefined, template.opacity, false, false, true, [], template.locked);
           image.src = '';
         } else {
           let s = new FileReader();
@@ -5955,7 +5989,7 @@ class jo extends ao {
           const optimized = await this.optimizeImportedImage(g);
           g.src = '';
           await this.waitForStableViewportProjection();
-          i = new S(this.bot, J.fromScreenPosition(this.bot, this.defaultImageScreenPosition()), new q(this.bot, optimized));
+          i = new SharkImage(this.bot, SharkMapPosition.fromScreenPosition(this.bot, this.defaultImageScreenPosition()), new SharkPixelData(this.bot, optimized));
         }
         if (!i.displayName) i.displayName = l.name.replace(/\.(?:wplace|png|jpe?g|webp|gif)$/i, '') || l.name;
         this.bot.images.push(i);
@@ -5970,145 +6004,154 @@ class jo extends ao {
     });
   }
   captureTemplate() {
-    this.$captureClose?.();
-    this.$capturePicker?.remove();
-    const panel = document.createElement('section');
-    panel.className = 'macroshark-capture-panel';
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-label', 'Capturar imagen');
-    panel.innerHTML = `<header><strong>Capturar imagen</strong><button type="button" class="capture-close" aria-label="Cerrar captura">×</button></header>
-      <div class="capture-body"><p>Toca cada botón y después el píxel correspondiente en el mapa.</p>
-      <div class="capture-points"><button type="button" class="capture-point-a">Punto A: elegir en el mapa</button><button type="button" class="capture-point-b">Punto B: elegir en el mapa</button></div>
-      <div class="capture-preview"><span>Selecciona A y B para ver la zona.</span></div>
-      <p class="capture-status" role="status" aria-live="polite"></p>
-      <button type="button" class="capture-download" disabled>Descargar imagen .png</button></div>`;
-    document.body.append(panel);
-    this.$capturePanel = panel;
-    const state = { a: null, b: null, canvas: null, blob: null, url: null, generation: 0, busy: false };
-    const status = panel.querySelector('.capture-status');
-    const preview = panel.querySelector('.capture-preview');
-    const download = panel.querySelector('.capture-download');
-    const pointButtons = { a: panel.querySelector('.capture-point-a'), b: panel.querySelector('.capture-point-b') };
-    const close = () => {
-      state.generation++;
-      if (state.url) URL.revokeObjectURL(state.url);
-      this.$capturePicker?.remove();
-      this.$capturePicker = null;
-      panel.remove();
-      if (this.$capturePanel === panel) this.$capturePanel = null;
-      if (this.$captureClose === close) this.$captureClose = null;
-    };
-    this.$captureClose = close;
-    panel.querySelector('.capture-close').onclick = close;
-    const renderPreview = async () => {
-      state.generation++;
-      const generation = state.generation;
-      state.canvas = null;
-      state.blob = null;
-      if (state.url) URL.revokeObjectURL(state.url);
-      state.url = null;
-      download.disabled = true;
-      if (!state.a || !state.b) return;
-      const bounds = {
-        minGlobalX: Math.min(state.a.x, state.b.x),
-        minGlobalY: Math.min(state.a.y, state.b.y),
-        maxGlobalX: Math.max(state.a.x, state.b.x),
-        maxGlobalY: Math.max(state.a.y, state.b.y)
+      this.$captureClose?.();
+      this.open=false;
+      this.guideDialog?.close();
+      for(const dialog of document.querySelectorAll('.macroshark-modal[open]'))dialog.close();
+      if(this.autoOverlayIntervalId)this.stopAutoOverlay();
+      if(this.drawActionRunning)this.bot.cancelDrawing=true;
+      const panel=document.createElement('section');
+      panel.className='macroshark-capture-panel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Capturar imagen');
+      panel.innerHTML='<header><strong>Capturar imagen</strong><button type="button" class="capture-close" aria-label="Cerrar captura">×</button></header><div class="capture-body"><p>Elige A y B. Puedes mover o acercar el mapa; un toque sin arrastrar selecciona el píxel.</p><div class="capture-points"><button type="button" class="capture-point-a">Punto A: elegir en el mapa</button><button type="button" class="capture-point-b">Punto B: elegir en el mapa</button></div><div class="shark-capture-coordinates"><input class="capture-coordinate-a" aria-label="Coordenadas A de captura" placeholder="0, 0, 0, 0" spellcheck="false"><input class="capture-coordinate-b" aria-label="Coordenadas B de captura" placeholder="0, 0, 0, 0" spellcheck="false"></div><div class="capture-preview"><span>Selecciona A y B para ver la zona completa.</span></div><p class="capture-status" role="status" aria-live="polite"></p><div class="capture-save-actions"><button type="button" class="capture-download" disabled>Descargar PNG</button><button type="button" class="capture-photos" hidden disabled>Abrir para Fotos</button></div></div>';
+      document.body.append(panel);this.$capturePanel=panel;
+      const state={a:null,b:null,blob:null,url:null,generation:0,busy:false,width:0,height:0,photoView:null};
+      const preview=panel.querySelector('.capture-preview'),status=panel.querySelector('.capture-status'),download=panel.querySelector('.capture-download');
+      const photos=panel.querySelector('.capture-photos');
+      const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)||navigator.userAgentData?.mobile===true;
+      if(mobile){photos.hidden=false;download.textContent='Guardar en Archivos';}
+      const points={a:panel.querySelector('.capture-point-a'),b:panel.querySelector('.capture-point-b')};
+      let clearPicker=()=>{};
+      const fitPreview=()=>{
+        if(!state.width||!state.height||panel.hidden)return;
+        const parent=preview.parentElement;
+        const style=getComputedStyle(parent);
+        const available=Math.max(1,parent.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-2);
+        const maxHeight=Math.max(80,Math.min(460,innerHeight*.44));
+        const width=Math.min(available,maxHeight*state.width/state.height);
+        preview.style.width=width+'px';preview.style.height=width*state.height/state.width+'px';
       };
-      const width = bounds.maxGlobalX - bounds.minGlobalX + 1;
-      const height = bounds.maxGlobalY - bounds.minGlobalY + 1;
-      if (width > 8192 || height > 8192 || width * height > 4194304) {
-        status.textContent = 'La zona supera 4 millones de píxeles. Elige un área menor.';
-        preview.replaceChildren();
-        return;
-      }
-      status.textContent = `Cargando vista previa de ${width} × ${height} píxeles…`;
-      preview.replaceChildren();
-      try {
-        const canvas = await this.buildCaptureCanvas(bounds, (done, total) => {
-          if (generation === state.generation) status.textContent = `Cargando mapa: ${done}/${total} tiles…`;
-        }, () => generation === state.generation && panel.isConnected);
-        if (generation !== state.generation || !panel.isConnected) return;
-        const blob = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(Error('No se pudo crear el archivo PNG.')), 'image/png'));
-        if (generation !== state.generation || !panel.isConnected) return;
-        state.canvas = canvas;
-        state.blob = blob;
-        state.url = URL.createObjectURL(blob);
-        preview.replaceChildren(canvas);
-        status.textContent = `${width} × ${height} píxeles listos para descargar.`;
-        download.disabled = false;
-      } catch (error) {
-        if (generation === state.generation) status.textContent = 'No se pudo crear la vista previa: ' + error.message;
-      }
-    };
-    const choosePoint = which => {
-      panel.hidden = true;
-      const picker = document.createElement('div');
-      picker.className = 'macroshark-capture-picker';
-      picker.innerHTML = `<span>Toca el píxel del punto ${which.toUpperCase()} · Esc para cancelar</span>`;
-      document.body.append(picker);
-      this.$capturePicker = picker;
-      const restore = () => {
-        picker.remove();
-        if (this.$capturePicker === picker) this.$capturePicker = null;
-        panel.hidden = false;
+      const close=()=>{
+        state.generation++;clearPicker();
+        state.photoView?.remove();state.photoView=null;
+        if(state.url)URL.revokeObjectURL(state.url);
+        window.removeEventListener('resize',fitPreview);
+        panel.remove();
+        if(this.$capturePanel===panel)this.$capturePanel=null;
+        if(this.$captureClose===close)this.$captureClose=null;
       };
-      const onKey = event => {
-        if (event.key !== 'Escape') return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        window.removeEventListener('keydown', onKey, true);
-        restore();
-      };
-      window.addEventListener('keydown', onKey, true);
-      picker.addEventListener('pointerdown', event => {
-        event.preventDefault();
-        event.stopPropagation();
+      this.$captureClose=close;panel.querySelector('.capture-close').onclick=close;
+      window.addEventListener('resize',fitPreview);
+      const renderPreview=async()=>{
+        const generation=++state.generation;
+        if(state.url)URL.revokeObjectURL(state.url);
+        state.url=null;state.blob=null;download.disabled=true;photos.disabled=true;
+        if(!state.a||!state.b)return;
+        const bounds={minGlobalX:Math.min(state.a.x,state.b.x),minGlobalY:Math.min(state.a.y,state.b.y),maxGlobalX:Math.max(state.a.x,state.b.x),maxGlobalY:Math.max(state.a.y,state.b.y)};
+        state.width=bounds.maxGlobalX-bounds.minGlobalX+1;state.height=bounds.maxGlobalY-bounds.minGlobalY+1;
+        if(state.width>8192||state.height>8192||state.width*state.height>4194304){status.textContent='La zona supera 4 millones de píxeles. Elige un área menor.';preview.replaceChildren();return;}
+        fitPreview();preview.replaceChildren();status.textContent='Cargando la zona seleccionada…';
+        const active=()=>generation===state.generation&&panel.isConnected;
         try {
-          const point = J.fromScreenPosition(this.bot, { x: event.clientX, y: event.clientY });
-          if (!Number.isFinite(point.globalX) || !Number.isFinite(point.globalY)) throw Error('No se pudo leer esa posición.');
-          state[which] = { x: point.globalX, y: point.globalY };
-          pointButtons[which].textContent = `Punto ${which.toUpperCase()}: ${point.globalX}, ${point.globalY}`;
-          status.textContent = `Punto ${which.toUpperCase()} seleccionado.`;
-          window.removeEventListener('keydown', onKey, true);
-          restore();
-          void renderPreview();
-        } catch (error) {
-          status.textContent = error.message;
-          window.removeEventListener('keydown', onKey, true);
-          restore();
-        }
-      }, { once: true });
-    };
-    pointButtons.a.onclick = () => choosePoint('a');
-    pointButtons.b.onclick = () => choosePoint('b');
-    download.onclick = async () => {
-      if (!state.url || !state.blob || state.busy) return;
-      state.busy = true;
-      download.disabled = true;
-      try {
-        const name = `wplace-capture-${Date.now()}.png`;
-        const file = new File([state.blob], name, { type: 'image/png' });
-        let canShareFile = false;
-        try { canShareFile = !!navigator.canShare?.({ files: [file] }); } catch {}
-        if (canShareFile && navigator.share) await navigator.share({ files: [file], title: 'Capturar imagen' });
-        else {
-          const link = document.createElement('a');
-          link.href = state.url;
-          link.download = name;
-          document.body.append(link);
-          link.click();
-          link.remove();
-        }
-        status.textContent = 'Imagen lista para guardar.';
-      } catch (error) {
-        status.textContent = error.name === 'AbortError' ? 'Guardado cancelado.' : 'No se pudo descargar: ' + error.message;
-      } finally {
-        state.busy = false;
-        download.disabled = !state.url;
+          const canvas=await this.buildCaptureCanvas(bounds,(done,total)=>{if(active())status.textContent='Cargando mapa: '+done+'/'+total;},active);
+          if(!active())return;
+          const blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('No se pudo crear la imagen.')),'image/png'));
+          if(!active())return;
+          state.blob=blob;state.url=URL.createObjectURL(blob);
+          const image=document.createElement('img');image.alt='Área completa: '+state.width+' × '+state.height+' píxeles';image.width=state.width;image.height=state.height;image.src=state.url;
+          preview.replaceChildren(image);fitPreview();canvas.width=canvas.height=0;
+          status.textContent=state.width+' × '+state.height+' píxeles listos para descargar.';download.disabled=false;photos.disabled=false;
+        } catch(error){if(active())status.textContent='No se pudo crear la vista previa: '+error.message;}
+      };
+      const choosePoint=which=>{
+        clearPicker();panel.hidden=true;
+        const picker=document.createElement('div');picker.className='macroshark-capture-picker';
+        picker.innerHTML='<span>Mueve el mapa y toca el píxel del punto '+which.toUpperCase()+' <button type="button">Cancelar</button></span>';
+        document.body.append(picker);this.$capturePicker=picker;
+        const activePointers=new Set();let gesture=null,tap=null;
+        const isMap=target=>!!target?.closest?.('.maplibregl-canvas');
+        const restore=()=>{clearPicker();panel.hidden=false;fitPreview();};
+        const down=event=>{
+          if(!isMap(event.target))return;
+          activePointers.add(event.pointerId);tap=null;
+          if(activePointers.size>1){if(gesture)gesture.moved=true;return;}
+          gesture={id:event.pointerId,x:event.clientX,y:event.clientY,started:performance.now(),moved:false};
+        };
+        const move=event=>{if(gesture?.id===event.pointerId&&Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>8)gesture.moved=true;};
+        const up=event=>{
+          activePointers.delete(event.pointerId);
+          if(gesture?.id!==event.pointerId)return;
+          if(!gesture.moved&&activePointers.size===0&&performance.now()-gesture.started<800)tap={x:event.clientX,y:event.clientY,time:performance.now()};
+          else tap=null;
+          gesture=null;
+        };
+        const cancel=event=>{activePointers.delete(event.pointerId);gesture=null;tap=null;};
+        const click=async event=>{
+          if(!isMap(event.target)||!tap||performance.now()-tap.time>1000)return;
+          event.preventDefault();event.stopImmediatePropagation();
+          const selected=tap;tap=null;
+          try {
+            await new Promise(resolve=>requestAnimationFrame(resolve));
+            if(!panel.isConnected)return;
+            this.bot.updateStars();
+            const p=this.bot.getMapProjection();
+            const point=p&&Number.isFinite(p.scale)&&p.scale>0?new SharkMapPosition(this.bot,Math.floor(p.worldX+(selected.x-p.screenX)/p.scale),Math.floor(p.worldY+(selected.y-p.screenY)/p.scale)):SharkMapPosition.fromScreenPosition(this.bot,selected);
+            if(!Number.isFinite(point.globalX)||!Number.isFinite(point.globalY))throw new Error('No se pudo leer ese píxel.');
+            state[which]={x:point.globalX,y:point.globalY};
+            panel.querySelector('.capture-coordinate-'+which).value=macrosharkFormatCoordinates(point);
+            restore();void renderPreview();
+          } catch(error){restore();status.textContent=error.message;}
+        };
+        const key=event=>{if(event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();restore();}};
+        const events=[['pointerdown',down],['pointermove',move],['pointerup',up],['pointercancel',cancel],['click',click],['keydown',key]];
+        clearPicker=()=>{
+          for(const [name,listener] of events)window.removeEventListener(name,listener,true);
+          picker.remove();if(this.$capturePicker===picker)this.$capturePicker=null;
+          clearPicker=()=>{};
+        };
+        for(const [name,listener] of events)window.addEventListener(name,listener,{capture:true,passive:name!=='click'&&name!=='keydown'});
+        picker.querySelector('button').onclick=restore;
+      };
+      points.a.onclick=()=>choosePoint('a');points.b.onclick=()=>choosePoint('b');
+      for(const which of ['a','b']){
+        const input=panel.querySelector('.capture-coordinate-'+which);
+        input.addEventListener('input',()=>input.setCustomValidity(''));
+        input.addEventListener('change',()=>{
+          try{state[which]=macrosharkParseCoordinates(input.value);input.value=macrosharkFormatCoordinates(state[which]);void renderPreview();}
+          catch(error){input.setCustomValidity(error.message);input.reportValidity();}
+        });
+        input.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Enter'){event.preventDefault();input.dispatchEvent(new Event('change'));}});
       }
-    };
-  }
+      download.onclick=()=>{
+        if(!state.blob||!state.url||state.busy)return;
+        state.busy=true;download.disabled=true;
+        try {
+          const name='wplace-capture-'+Date.now()+'.png';
+          // A separate URL survives closing the preview while Safari starts saving.
+          const url=URL.createObjectURL(state.blob),link=document.createElement('a');
+          link.href=url;link.download=name;document.body.append(link);
+          try{link.click();}finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+          status.textContent=mobile?'Descarga solicitada. Búscala en Archivos > Descargas.':'Descarga solicitada. Revisa las descargas del navegador.';
+        } catch(error){status.textContent='No se pudo iniciar la descarga: '+error.message;}
+        finally{state.busy=false;download.disabled=!state.url;}
+      };
+      photos.onclick=async()=>{
+        if(!state.blob||!state.url||state.busy)return;
+        const generation=state.generation;
+        photos.disabled=true;
+        try {
+          const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('No se pudo abrir la imagen.'));reader.readAsDataURL(state.blob);});
+          if(!panel.isConnected||generation!==state.generation)return;
+          state.photoView?.remove();
+          const view=document.createElement('section');view.className='macroshark-photo-save';view.setAttribute('role','dialog');view.setAttribute('aria-label','Guardar en Fotos');
+          view.innerHTML='<header><strong>Guardar en Fotos</strong><button type="button" class="photo-save-back">Volver</button></header><p>Mantén pulsada la imagen y elige Guardar en Fotos o Guardar imagen en el menú del teléfono. Para guardarla como archivo, vuelve y pulsa Guardar en Archivos.</p>';
+          const image=document.createElement('img');image.src=data;image.alt='Captura completa para guardar en Fotos';image.width=state.width;image.height=state.height;
+          view.append(image);document.body.append(view);state.photoView=view;panel.hidden=true;
+          const back=()=>{view.remove();if(state.photoView===view)state.photoView=null;if(panel.isConnected){panel.hidden=false;fitPreview();}};
+          view.querySelector('button').onclick=back;
+        } catch(error){if(panel.isConnected)status.textContent=error.message;}
+        finally{photos.disabled=!state.blob;}
+      };
+    }
   async buildCaptureCanvas(bounds, onProgress, isActive = () => true) {
     const { minGlobalX: minX, minGlobalY: minY, maxGlobalX: maxX, maxGlobalY: maxY } = bounds;
     const canvas = document.createElement('canvas');
@@ -6207,7 +6250,7 @@ class jo extends ao {
               x: n.clientX,
               y: n.clientY
             };
-            let M = J.fromScreenPosition(this.bot, r);
+            let M = SharkMapPosition.fromScreenPosition(this.bot, r);
             s = {
               x: M.globalX,
               y: M.globalY
@@ -6218,7 +6261,7 @@ class jo extends ao {
               x: n.clientX,
               y: n.clientY
             },
-            h = J.fromScreenPosition(this.bot, b);
+            h = SharkMapPosition.fromScreenPosition(this.bot, b);
           if (c(), !s) {
             a(Error("Capture anchor point unavailable"));
             return;
@@ -6308,6 +6351,7 @@ class jo extends ao {
       button.disabled = false;
     }
   }
+  loadGalleryImage(image,detail=true){return macrosharkLoadGalleryImage(this,image,detail);}
   getPaintImage() {
     return this.bot.images.find(image => image.paintSelected) || null;
   }
@@ -6319,6 +6363,9 @@ class jo extends ao {
   }
   selectPaintImage(image, rerender = true) {
     if (!this.bot.images.includes(image)) return;
+    if(image.isDeferred){void this.loadGalleryImage(image,rerender);return;}
+    if (this.autoOverlayTickRunning && this.getPaintImage() !== image) { this.showNativeNotice('Detén AutoDraw antes de cambiar de imagen.'); return; }
+    if (this.autoOverlayIntervalId && this.getPaintImage() !== image) this.stopAutoOverlay();
     for (const entry of this.bot.images) entry.paintSelected = entry === image;
     this.activeImageIndex = this.bot.images.indexOf(image);
     this.paintSpeed = image.paintSpeed || 1;
@@ -6332,6 +6379,7 @@ class jo extends ao {
   renderImagesList() {
     this.bot.referenceSignature = null;
     this.bot.scheduleReferencePreview?.();
+    if (this.inlineAutoImage && this.inlineAutoImage !== this.selectedGalleryImage) this.inlineAutoImage = null;
     this.$images.innerHTML = "";
     this.imageProgressRows = new Map();
     if (this.selectedGalleryImage && !this.bot.images.includes(this.selectedGalleryImage)) this.selectedGalleryImage = null;
@@ -6339,9 +6387,11 @@ class jo extends ao {
     this.$imagesSection.querySelector('.shark-gallery-count').textContent = `${this.bot.images.length} locales`;
     let o = document.createDocumentFragment();
     for (let a = 0; a < this.bot.images.length; a++) {
+      const deferred=this.bot.images[a];
+      if(deferred.isDeferred){macrosharkRenderDeferredCard(this,deferred,a,o);continue;}
       let l = this.bot.images[a],
         i = document.createElement("div");
-      o.append(i), i.className = "image shark-gallery-card", i.innerHTML = `<button class="shark-detail-back" type="button" aria-label="Volver a canvas">← Volver</button><div class="shark-image-actions"><button class="shark-image-select" type="button"></button><button class="shark-image-speed" type="button"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i><span></span></button><button class="shark-image-confirm" type="button"><i class="fa-solid fa-check" aria-hidden="true"></i><span></span></button><button class="shark-image-autodraw" type="button"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>Configurar AutoDraw</span></button><button class="shark-image-capture" type="button"><i class="fa-solid fa-camera" aria-hidden="true"></i><span>Capturar imagen</span></button></div><button class="preview" title="Seleccionar esta plantilla para pintar">
+      o.append(i), i.className = "image shark-gallery-card", i.innerHTML = `<button class="shark-detail-back" type="button" aria-label="Volver a canvas">← Volver</button><div class="shark-image-actions"><button class="shark-image-select" type="button"></button><button class="shark-image-speed" type="button"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i><span></span></button><button class="shark-image-confirm" type="button"><i class="fa-solid fa-check" aria-hidden="true"></i><span></span></button><button class="shark-image-autodraw" type="button"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>Configurar AutoDraw</span></button></div><button class="preview" title="Seleccionar esta plantilla para pintar">
   <img src="${l.pixels.image.src}" alt="Image preview">
 </button>
   <div class="shark-card-heading"><strong class="shark-card-name"></strong><input class="shark-card-name-input" type="text" maxlength="80" aria-label="Nuevo nombre de la plantilla" hidden><button class="shark-card-rename" type="button" title="Cambiar nombre" aria-label="Cambiar nombre de la plantilla"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i></button><span class="shark-card-size"></span></div>
@@ -6376,7 +6426,6 @@ class jo extends ao {
       refreshConfirm();
       confirm.addEventListener('click', () => { l.confirmPaint = !l.confirmPaint; if (l.paintSelected) this.manualConfirmation = !l.confirmPaint; refreshConfirm(); H(this.bot, true); });
       i.querySelector('.shark-image-autodraw').addEventListener('click', () => { this.selectPaintImage(l, false); this.autoConfigImage = l; this.openAutoOverlayModal(); });
-      i.querySelector('.shark-image-capture').addEventListener('click', () => { this.selectPaintImage(l, false); this.captureTemplate(); });
       const rename = i.querySelector('.shark-card-rename');
       const name = i.querySelector('.shark-card-name');
       const nameInput = i.querySelector('.shark-card-name-input');
@@ -6409,6 +6458,7 @@ class jo extends ao {
       });
       nameInput.addEventListener('blur', () => finishRename(true));
       i.classList.toggle('shark-detail-active', this.selectedGalleryImage === l);
+      this.installImagePaintActions(i,l);
       const strategy = i.querySelector('.shark-card-strategy');
       strategy.replaceChildren(...Array.from(l.$strategy.options, option => option.cloneNode(true)));
       strategy.value = l.strategy;
@@ -6456,7 +6506,8 @@ class jo extends ao {
         this.selectedGalleryImage = null;
         this.renderImagesList();
       }), i.querySelector(".focus-map").addEventListener("click", () => {
-        this.activeImageIndex = a, l.position.scrollScreenTo();
+        this.activeImageIndex = a;
+        new SharkMapPosition(this.bot, l.position.globalX + l.pixels.width / 2, l.position.globalY + l.pixels.height / 2).scrollScreenTo();
       }), i.querySelector(".colors").addEventListener("click", () => {
         this.activeImageIndex = a, l.openColorPanel();
       }), i.querySelector(".strategy-modal").addEventListener("click", () => {
@@ -6471,6 +6522,8 @@ class jo extends ao {
       });
     }
     this.$images.append(o);
+    this.syncActionButtons();
+    if (this.inlineAutoImage === this.selectedGalleryImage) this.renderInlineAutoSettings(this.inlineAutoImage);
     this.filterGallery();
     this.refreshProgress();
   }
@@ -6498,6 +6551,7 @@ class jo extends ao {
       bar.setAttribute('aria-valuenow', String(percent));
       bar.setAttribute('aria-valuetext', `${percent}% · ${remaining} restantes`);
     }
+  for(const card of this.$images?.querySelectorAll('.shark-gallery-card')||[])card.sharkSyncCoordinates?.();
   }
   syncOverlayVisibilityFromStorage() {
     let o = localStorage.getItem(oa) === "true";
@@ -6505,7 +6559,9 @@ class jo extends ao {
   }
   toggleOverlay(o) {
     let a = o ?? !document.body.classList.contains("overlay-hidden");
-    document.body.classList.toggle("overlay-hidden", a), localStorage.setItem(oa, String(a)), this.refreshOverlayToggleText(), void 0;
+    document.body.classList.toggle("overlay-hidden", a);
+    localStorage.setItem(oa, String(a));
+    this.refreshOverlayToggleText();
   }
   refreshOverlayToggleText() {
     let o = document.body.classList.contains("overlay-hidden"),
@@ -6526,105 +6582,14 @@ class jo extends ao {
     if (this.imagesListDirty) this.renderImagesList(), this.imagesListDirty = false;
   }
   openGuideModal() {
-    if (this.guideDialog?.isConnected) {
-      this.guideDialog.querySelector('.guide-close').focus();
-      return;
+      if(this.guideDialog?.isConnected){this.guideDialog.querySelector('.guide-close').focus();return;}
+      const dialog=document.createElement('dialog');dialog.className='macroshark-guide';
+      dialog.setAttribute('aria-labelledby','macroshark-guide-title');dialog.innerHTML="<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><small>Plus.36 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\">×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Al iniciar se carga la lista de plantillas. Toca una para prepararla; verás un indicador mientras carga. Al cambiar de imagen se libera la anterior de memoria conservando sus datos. El tiburón muestra u oculta los cuatro controles laterales: imágenes, Captura, Dibujar y AutoDraw. El botón de imágenes abre el panel general. Las actualizaciones se comprueban automáticamente. Cuando hay una versión nueva, el pintado queda bloqueado hasta instalarla; el tiburón permite volver a abrir el aviso. Mantén activa una sola copia del macro.</p>\n<details open><summary>Empezar a pintar</summary><ol><li>Importa una imagen o una plantilla .wplace, o usa «Actualizar canvas» para leer las plantillas locales de WPlace.</li><li>Toca una tarjeta para seleccionar la imagen. Sus ajustes se guardan individualmente.</li><li>Usa la mira para ir a la imagen. Desbloquéala para moverla o ajustar su tamaño con los ocho puntos del borde.</li><li>Pulsa «Empezar a pintar» debajo de la imagen, o el lápiz lateral, para preparar una tanda. «Confirmar pintado» decide si esa tanda manual se confirma al terminar. Los píxeles preparados todavía no equivalen a píxeles confirmados.</li></ol></details>\n<details><summary>Controles y ajustes por imagen</summary><p>En la columna derecha están MacroShark, el panel de imágenes, Captura, Dibujar y AutoDraw. El lápiz junto al nombre permite renombrar la imagen. La velocidad alterna x1, x2 y x4; cambia la espera de preparación, no la recarga de la cuenta ni los límites de WPlace.</p><p>En cada ficha puedes elegir el recorrido, opacidad, colores y pintado de transparentes. Los ajustes de AutoDraw se abren en un bloque compacto de esa misma ficha. Al iniciar se cierra el panel para ver el mapa; si faltan ajustes de AutoDraw, la configuración permanece abierta.</p><p>Las barras A y B contienen cuatro números compatibles con las coordenadas de WPlace: por ejemplo, 1024, 1024, 200, 300. A es la esquina superior izquierda y B la inferior derecha. Editar una mueve la imagen y calcula la otra conservando su tamaño. No se pueden cambiar mientras el macro pinta.</p><p>La mira usa el mapa de WPlace para ir directamente al centro de la imagen y conserva el zoom actual. Si ese acceso no está disponible, vuelve al arrastre anterior. Dibujar y AutoDraw no mueven la cámara ni cambian el zoom. Usa la mira antes de pintar si necesitas acercarte a la imagen. «Vista previa», con el ojo, muestra una referencia visual para pintar manualmente. La previsualización animada del recorrido se abre desde la ficha.</p></details>\n<details><summary>Mover el mapa con las flechas</summary><p>Cierra los paneles y usa ↑ ↓ ← → para mover la vista en esa dirección. Con la paleta abierta, cada paso avanza un píxel del mapa; con la paleta cerrada, avanza 40 píxeles de pantalla. Mantener una flecha repite el movimiento y soltarla lo detiene. Si pulsas dos flechas, se usa la última para conservar una dirección recta.</p><p>Para dibujar una línea, abre la paleta de WPlace, elige un color, coloca el cursor sobre el mapa y mantén Espacio junto con una flecha. El macro añade el movimiento; el pintado con Espacio sigue siendo el de WPlace. No confirma la tanda ni cambia el color.</p><p>Las flechas no se interceptan al escribir, utilizar campos o paneles, ni durante Dibujar o AutoDraw. Al cambiar de ventana se detiene el movimiento. Si WPlace no permite acceder directamente al mapa, el respaldo con arrastre puede avanzar más despacio.</p></details>\n<details><summary>Capturar una zona del mapa</summary><p>«Captura» está en la barra principal, entre «Actualizar canvas» e «Importar imagen»; en móvil se muestra con una cámara. Al abrirlo se cierran los otros paneles del macro.</p><ol><li>Pulsa «Punto A» y mueve o acerca el mapa hasta el lugar deseado. Toca un píxel sin arrastrar para seleccionarlo.</li><li>Haz lo mismo con «Punto B». Los arrastres y los gestos de zoom no eligen puntos. «Cancelar» vuelve al panel.</li><li>Revisa las coordenadas y la vista previa completa. Su tamaño se adapta a las proporciones de la selección.</li><li>Pulsa «Descargar PNG» o, en móvil, «Guardar en Archivos». Se solicita una descarga normal, sin abrir Compartir. En iPhone se guarda en la carpeta Descargas de Archivos, según los ajustes de Safari.</li><li>Para la fototeca, pulsa «Abrir para Fotos». Mantén pulsada la imagen que aparece y elige «Guardar en Fotos» o «Guardar imagen» en el menú del teléfono. El macro no puede guardarla automáticamente en la fototeca. «Volver» regresa a la captura.</li></ol><p>Ambas opciones conservan la resolución original del PNG seleccionado.</p></details>\n<details><summary>AutoDraw y cuenta regresiva</summary><p>Configura el intervalo y la cantidad de píxeles por ciclo en la imagen que deseas pintar. «Iniciar AutoDraw», debajo de esa imagen, o el triángulo lateral, inician y detienen los ciclos. Si faltan ajustes, el botón de la ficha abre la configuración primero. Junto al triángulo aparece la cuenta regresiva o «Pintando…».</p><p>Cada ciclo abre la paleta si hace falta, consulta las cargas y el mapa, prepara los píxeles pendientes y confirma automáticamente, aunque «Confirmar pintado» esté apagado. Si faltan cargas, usa las disponibles. Al terminar y comprobar la confirmación espera el intervalo indicado. Si no hay cargas todavía, espera el siguiente intervalo. El intervalo mínimo es de cinco segundos.</p><p>La opción de variar usa el 80–99 % de la cantidad y espera configuradas. Los ciclos no se superponen. Si terminas la imagen, AutoDraw se detiene. Una verificación, límite o fallo de confirmación puede necesitar revisión; se muestra el motivo. Cerrar la paleta durante la espera no cancela AutoDraw.</p></details>\n<details><summary>Importar, sincronizar y descargar</summary><p>La importación directa admite imágenes y archivos .wplace. «Actualizar canvas» lee las plantillas que WPlace guarda localmente en el mismo navegador. La sincronización va de WPlace al macro; las imágenes que cargues únicamente al macro no se envían a WPlace. No sincroniza entre dispositivos.</p><p>La flecha de descarga ofrece plantilla .wplace, PNG con transparencia o JPG con fondo blanco. .wplace guarda la imagen y su ubicación para volver a importarla. PNG y JPG guardan la imagen, sin la ubicación. En iPhone puede abrirse el menú de compartir para guardar el archivo.</p></details>\n<details><summary>Colores y apariencia</summary><p>El modo normal usa bordes redondos; el pixelado usa cuadrados. Paneles, selectores y previsualizaciones siguen el tema claro u oscuro y el acento de WPlace. Los colores de tu imagen no se alteran al cambiar el tema.</p><p>En el panel de colores puedes activar o excluir colores y cambiar su prioridad. Antes de cada tanda se abre la paleta, se lee el mapa confirmado y se revisa la selección pendiente de WPlace. Los píxeles preparados se conservan mientras sigan en esa selección; si se descartan o no llegaron al mapa, vuelven a intentarse. El avance no cuenta los preparados como confirmados.</p></details>\n<details><summary>Teclado y solución de problemas</summary><p>Shift + M: minimizar · Shift + S: abrir · Shift + V: mostrar u ocultar imágenes · Shift + Enter: dibujar · Shift + I: importar · Shift + /: guía · Shift + N/P: siguiente o anterior imagen · Shift + O: colores · Shift + L: candado.</p><p>Después de actualizar, desactiva cualquier copia de prueba y recarga WPlace. Los gestores comparten los datos locales del sitio, por lo que tus imágenes deben conservarse. Si la página necesita una verificación, resuélvela y vuelve a abrir la paleta para actualizar el estado. Safari puede retrasar temporizadores cuando la pestaña está en segundo plano; mantén WPlace visible para probar los ciclos.</p></details>\n</div>\n";
+      this.guideDialog=dialog;document.body.append(dialog);
+      dialog.querySelector('.guide-close').onclick=()=>dialog.close();
+      dialog.addEventListener('close',()=>{dialog.remove();this.guideDialog=null;this.$openConfig.focus();},{once:true});
+      dialog.showModal();
     }
-    const dialog = document.createElement('dialog');
-    dialog.className = 'macroshark-guide';
-    dialog.setAttribute('aria-labelledby', 'macroshark-guide-title');
-    dialog.innerHTML = "<div class=\"macroshark-guide-head\"><div><strong id=\"macroshark-guide-title\">Guía de MacroShark</strong><s\
- mall>Plus.35 · PC y móvil</small></div><button type=\"button\" class=\"guide-close\" aria-label=\"Cerrar guía\"\
->×</button></div>\n<div class=\"macroshark-guide-body\">\n<p>Importa una imagen, colócala en el mapa, seleccio\
-na los colores disponibles y elige cómo dibujarla.</p>\n<p>Selecciona una tarjeta de Canvas para cambiar el modo de pintado, la opacidad, los colores y el tamaño de esa imagen. El panel que aparecía debajo de la plantilla en el mapa se retiró.</p>\n<details open><summary>Primeros pasos</summary><ol><li\
->Pulsa <b>Importar Imagen</b> y elige una imagen o una plantilla .wplace. Las plantillas .wplace conservan su posición guardada en el mapa.</li><li>Abre el candado de\
- la imagen para moverla con el ratón o con un dedo. Ciérralo al terminar: queda anclada al mapa.</li><li>Pulsa\
- el botón de verificación de su tarjeta para activar solo los colores que tienes en tu cuenta.</li><li>Abre lo\
-s ajustes de estrategia para elegir el recorrido de pintado.</li><li>Elige el límite de píxeles y pulsa <b>Dib\
-ujar</b>. <b>Confirmar pintado</b> viene activo en una instalación nueva y confirma la tanda; al apagarlo, Dibujar solo prepara los píxeles.</li></ol></details>\n<details><summary>Panel principal y canvas</summary><dl>\n<dt>🐟 Tiburón</dt><dd>Abre o minimiza la barra principal. Minimizado aparece arriba de los otros tres botones del macro, alineado con la columna lateral de WPlace. Al abrirse aparecen las funciones de MacroShark en una barra adaptable. La columna derecha muestra el tiburón encima de Canvas, Dibujar y AutoDraw. La X cierra Canvas. La barra principal se mantiene sobre la paleta y Canvas permanece centrado.</dd>\n<dt>Velocidad de pintado</dt><dd>Alterna x1, x2 y x4 para acortar la espera entre píxeles preparados: 40, 20 o 10 ms. x1 es el ritmo más prudente, pero ninguna opción garantiza evitar controles de WPlace. No cambia la recarga de píxeles ni el tiempo de confirmación.</dd><dt>↻ Actualizaciones</dt><dd>Consulta ahora la versión publicada y muestra el aviso si hay una nueva.</dd><dt>? Guía</dt><dd>Abre esta ayuda. El botón × la cierra; en PC también puedes usar E\
-sc.</dd>\n<dt>Dibujar / Detener dibujo · pluma</dt><dd>Pulsa otra vez mientras trabaja para detenerlo. Los píx\
-eles ya preparados se conservan. Prepara los píxeles pendientes según el límite elegido y las cargas disponibl\
-es. Si Confirmar pintado está activo, también confirma la tanda.</dd>\n<dt>Confirmar pintado · botón principal</dt><dd>Activa o desactiva la confirmación de la tanda. Activado: Dibujar confirma al terminar. Apagado: deja los píxeles preparados para confirmación manual. AutoDraw confirma cada tanda en ambos casos.</dd><dt>Confi\
-gurar pintado</dt><dd>Abre sobre el área del macro las opciones de pintado automático, límite y aleatorización\
-. Pulsa Volver para regresar. Configurar AutoDraw aparece en el tercer botón y abre Auto Draw dentro del macr\
-o.</dd><dt>Aleatorizar cantidad</dt><dd>Desactivado inicialmente. Al act\
-ivarlo se elige una cantidad entera entre el 90 % y el 100 % del límite efectivo para cada tanda. Con 1200, pu\
-ede elegir entre 1080 y 1200. Nunca supera las cargas disponibles ni el límite del ciclo automático. En AutoDr\
-aw, si Randomizar está activo, se usa su rango de 80–99 % y no se acumula otra aleatorización de cantidad. Si \
-quedan menos píxeles pendientes, se dibujan solo esos.</dd><dt>Píxeles por tanda</dt><dd>Desliza para limitar \
-la cantidad, por ejemplo 1000. El extremo derecho usa todas las cargas disponibles. Se aplica también al auto \
-dibujo; nunca supera el saldo consultado ni la cantidad configurada en ese ciclo.</dd>\n<dt>Capturar imagen · \
-cámara</dt><dd>Abre un panel para tocar los píxeles A y B en el mapa. Muestra sus coordenadas y una vista previa antes de guardar el PNG.</dd>\n<dt>Ocult\
-ar/mostrar overlays · capas, en el encabezado Imágenes</dt><dd>Muestra u oculta las imágenes superpuestas al m\
-apa sin eliminarlas.</dd>\n<dt>Configurar auto draw · reloj</dt><dd>Abre Auto Draw dentro del área del macro. \
-Define los píxeles por ciclo y la espera en segundos, minutos u horas. Randomizar elige, por separado en cada \
-ciclo, entre el 80 % y el 99 % de los píxeles y del tiempo configurados. Se respeta una espera mínima de 5 seg\
-undos y al menos 1 píxel. La espera comienza al terminar la tanda anterior. Guardar configuración conserva los\
- cambios; iniciar y detener se hace desde la columna lateral.</dd>\n<dt>Iniciar / Detener AutoDraw · triángulo\
-</dt><dd>El mismo botón inicia y detiene el proceso. Toma el color del botón Pintar de WPlace mientras está activo y vuelve al color normal al detenerlo. Inicia los ciclos con la configuración guardada y un intervalo mínimo de 5 segundos. Confirma cada tanda automáticamente y continúa con el siguiente ciclo. Ante errores, límites o verificaciones se pausa para revisión.</dd>\n<dt>Configurar AutoDraw · panel compacto</dt><dd>Es el tercer botón del panel principal.</dd>\n<dt>Estado tras abrir la paleta</dt><dd>Al volver a abrir la barra de colores, MacroShark consulta de nuevo la cuenta y el mapa y habilita las acciones cuando la verificación o la espera hayan terminado. No reinicia AutoDraw por sí solo.</dd><dt>Encabezado Acciones</dt><dd>Despliega o contrae los cuatro botones del panel principal. Canvas se abre por separado desde la columna lateral.</dd>\n</dl></details>\n<details><summary>Impor\
-tación y botones de cada imagen</summary><dl>\n<dt>Vista previa · encabezado Imágenes</dt><dd>Referencia para \
-pintar a mano: cuadrados centrados del 50 % del tamaño de cada píxel, con 100 % de opacidad. El mapa queda vis\
-ible alrededor y los toques pasan a la página. Es independiente de Mostrar/Ocultar plantillas; el color de Pintar indica que está activa. Sustituye visualmente la superposición normal mientras está encendida, sin cambiar su preferenc\
-ia. Acerca el mapa si los píxeles son demasiado pequeños para distinguir los cuadrados. No coloca ni confirma \
-píxeles.</dd><dt>Importar Imagen</dt><dd>Abre el selector del dispositivo. Acepta imágenes y plantillas .wplace. Las imágenes y ajustes se guardan localmente; no se sincronizan entre dispositivos. Para imágenes\
- mayores de un megapíxel se ofrece reducir la resolución antes del análisis, o conservarla expresamente. Las p\
-lantillas .wplace mantienen su tamaño guardado. Los colores se calculan una vez por tamaño y se guardan como índi\
-ces.</dd>\n<dt>Miniatura</dt><dd>Abre la vista previa y las opciones de pintado de esa imagen.</dd>\n<dt>Ir a \
-la imagen · mira</dt><dd>Desplaza el mapa hacia la ubicación guardada de la imagen.</dd>\n<dt>Colores · paleta\
-</dt><dd>Abre los colores de la imagen. Puedes buscarlos, activarlos o desactivarlos y reorganizar su priorida\
-d. Las opciones de reemplazo permiten cambiar un color por otro disponible.</dd>\n<dt>Estrategia · deslizadore\
-s</dt><dd>Abre la vista previa de los modos de pintado y permite elegir el recorrido.</dd>\n<dt>Colores dispon\
-ibles · verificación</dt><dd>Consulta tu cuenta, activa los colores gratuitos y premium desbloqueados, y desac\
-tiva los bloqueados para esa imagen. Vuelve a pulsarlo si compras un color. Si falla la consulta, muestra un e\
-rror.</dd>\n<dt>Descargar · flecha hacia abajo sobre línea</dt><dd>Exporta la imagen con su configuración como\
- plantilla .wplace para volver a importarla. </dd>\n<dt>Eliminar · papelera</dt><dd>Quita la imagen del macro. No\
- borra lo pintado en el mapa.</dd>\n<dt>Subir / bajar · flechas</dt><dd>Cambia el orden de las imágenes. Se tr\
-abajan en orden secuencial.</dd>\n<dt>Progreso de la tarjeta</dt><dd>Resume los píxeles contabilizados respect\
-o al total de la imagen. No es una confirmación del servidor; se recalcula al leer el mapa y depende de los co\
-lores y opciones activados.</dd>\n</dl></details>\n<details><summary>Controles de la imagen sobre el mapa</sum\
-mary><dl>\n<dt>Paleta, varita, descargar y papelera</dt><dd>Abren colores, muestran la vista previa, exportan \
-la plantilla o eliminan la imagen, respectivamente.</dd>\n<dt>Candado abierto / cerrado</dt><dd>Abierto permit\
-e arrastrar la imagen; cerrado bloquea su ubicación en el mapa. Mover el mapa no modifica esa ubicación.</dd>\n\
-<dt>Opacidad</dt><dd>Cambia la transparencia de la referencia visual, no el color que se pinta.</dd>\n<dt>Tama\
-ño y restablecer tamaño</dt><dd>Los controles de redimensionado ajustan la referencia cuando está desbloqueada\
-. Restablecer tamaño recupera su ancho original.</dd>\n<dt>Borrar píxeles transparentes</dt><dd>Incluye las zo\
-nas transparentes como borrado. Déjalo desactivado si quieres saltar esas zonas.</dd>\n<dt>Pintar colores en o\
-rden</dt><dd>Agrupa las tareas por la prioridad de colores. No se combina con Secuencia de colores, que gestio\
-na sus propios cambios.</dd>\n<dt>Pintar solo colores disponibles</dt><dd>Excluye los colores bloqueados de la\
-s tareas de esa imagen. El botón de verificación también activa esta opción.</dd>\n</dl></details>\n<details><\
-summary>Los 10 modos de pintado</summary><p>Estos modos cambian el orden de los píxeles pendientes; no añaden \
-cargas ni aceleran la recarga de la cuenta.</p><dl>\n<dt>1. Izquierda a derecha</dt><dd>Recorre las columnas e\
-mpezando por el lado izquierdo.</dd>\n<dt>2. Derecha a izquierda</dt><dd>Recorre las columnas empezando por el\
- lado derecho.</dd>\n<dt>3. Arriba hacia abajo</dt><dd>Avanza por filas desde la parte superior.</dd>\n<dt>4. \
-Abajo hacia arriba</dt><dd>Avanza por filas desde la parte inferior.</dd>\n<dt>5. Circular hacia afuera</dt><d\
-d>Empieza cerca del centro y avanza por bandas de distancia circular hacia el exterior.</dd>\n<dt>6. Circular \
-hacia adentro</dt><dd>Invierte el recorrido circular: del exterior hacia el centro.</dd>\n<dt>7. Borde hacia a\
-fuera</dt><dd>Recorre anillos rectangulares desde el interior hacia los bordes de la imagen.</dd>\n<dt>8. Bord\
-e hacia adentro</dt><dd>Recorre el perímetro rectangular y continúa con anillos cada vez más interiores.</dd>\n\
-<dt>9. Pintado humanizado</dt><dd>Organiza el recorrido en grupos de píxeles cercanos con variaciones de orden\
-. El nombre describe el recorrido visual; no garantiza ocultar la automatización.</dd>\n<dt>10. Secuencia de c\
-olores</dt><dd>Trabaja en zonas cercanas: pinta pequeños grupos de un color, alterna con otros de la misma zon\
-a y después continúa. Da prioridad a colores con más píxeles pendientes dentro de la zona.</dd>\n</dl></detail\
-s>\n<details><summary>Atajos de PC y dudas frecuentes</summary><p><b>Shift + M:</b> minimizar · <b>Shift + S:<\
-/b> mostrar · <b>Shift + V:</b> overlays · <b>Shift + Enter:</b> dibujar · <b>Shift + I:</b> ir a Importar Ima\
-gen · <b>Shift + /:</b> guía · <b>Shift + N/P:</b> siguiente/anterior imagen · <b>Shift + O:</b> colores de la\
- imagen activa · <b>Shift + L:</b> candado de la imagen activa.</p><p>Si una acción falla, revisa el mensaje d\
-e estado del panel. Mantén una sola copia del macro activa y recarga la página después de actualizar. El mapa,\
- las cargas y la conexión deben estar listos. En móvil, el dibujo conserva las coordenadas decimales al trabaj\
-ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del servidor; el estado se comprueba\
- al volver a leer el mapa.</p></details>\n</div>\r\n";
-    this.guideDialog = dialog;
-    document.body.append(dialog);
-    dialog.querySelector('.guide-close').onclick = () => dialog.close();
-    dialog.addEventListener('close', () => {
-      dialog.remove();
-      this.guideDialog = null;
-      this.$openConfig.focus();
-    }, {
-      once: true
-    });
-    dialog.showModal();
-  }
   formatCharges(o) {
     if (!o || typeof o !== "object") return "—";
     let a = o,
@@ -6648,13 +6613,18 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
     return String(o).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
   }
   refreshAutoOverlayStatusText() {
-    this.syncActionButtons?.();
-    if (!this.autoOverlayConfig) {
-      this.$autoOverlayStatus.textContent = "";
-      return;
+      this.syncActionButtons?.();
+      const active=!!this.autoOverlayIntervalId;
+      const label=active?(this.autoOverlayTickRunning?'Pintando…':this.formatCountdown(this.autoOverlayNextTickAt).split(' ').at(-1)):'';
+      this.$autoOverlayStatus.textContent=active?label:'';
+      if(this.$quickAuto){
+        let badge=this.$quickAuto.querySelector('.shark-auto-countdown');
+        if(!badge){badge=document.createElement('span');badge.className='shark-auto-countdown';this.$quickAuto.append(badge);}
+        badge.textContent=label;badge.hidden=!active;
+        const text=active?'Detener AutoDraw · '+label:'Iniciar AutoDraw';
+        this.$quickAuto.title=text;this.$quickAuto.setAttribute('aria-label',text);
+      }
     }
-    this.$autoOverlayStatus.textContent = this.autoOverlayIntervalId ? `${f("autoOverlayRunning")} (${this.formatAutoDrawDelay(this.autoOverlayConfig.timerMs)}) · ${this.formatCountdown(this.autoOverlayNextTickAt)}` : f("autoOverlayStopped");
-  }
   formatCountdown(o) {
     if (!o) return "00:00";
     let a = Math.max(0, o - Date.now()),
@@ -6674,9 +6644,18 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
       this.syncActionButtons?.();
       return;
     }
-    clearTimeout(this.autoOverlayIntervalId), this.autoOverlayIntervalId = void 0, this.autoOverlayNextTickAt = void 0, this.autoOverlayPendingTick = !1, this.refreshAutoOverlayStatusText(), void 0;
+    clearTimeout(this.autoOverlayIntervalId);
+    this.autoOverlayIntervalId = void 0;
+    this.autoOverlayNextTickAt = void 0;
+    this.autoOverlayPendingTick = !1;
+    this.refreshAutoOverlayStatusText();
   }
   startAutoOverlay() {
+    if(this.getPaintImage()?.isDeferred){
+      if(this.loadingPaintStart)return;this.loadingPaintStart=true;
+      this.loadGalleryImage(this.getPaintImage(),true).then(image=>{this.loadingPaintStart=false;if(image)this.startAutoOverlay();}).catch(error=>{this.loadingPaintStart=false;this.showNativeNotice(error.message);});return;
+    }
+    if(this.loadingGalleryImage){this.showNativeNotice('Espera a que termine de cargar la plantilla.');return;}
     if (this.updateRequired) { macrosharkShowUpdate(this.updateRequired); return; }
     if (this.autoOverlayTickRunning || this.drawActionRunning) return;
     if (!this.getPaintImage()) { this.showPaintSelectionPrompt(); return; }
@@ -6691,6 +6670,8 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
       return;
     }
     this.stopAutoOverlay();
+    this.open=false;
+    if(document.activeElement?.closest?.('.wwidget'))document.activeElement.blur();
     this.autoOverlayIntervalId = -1;
     this.autoOverlayNextTickAt = undefined;
     this.refreshAutoOverlayStatusText();
@@ -6716,26 +6697,31 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
     return min + Math.floor(Math.random() * (max - min + 1));
   }
   async runAutoOverlayCycle() {
-    if (!this.autoOverlayConfig || this.autoOverlayTickRunning) return;
-    this.autoOverlayTickRunning = !0;
-    this.bot.cancelDrawing = false;
-    let o = this.resolveCyclePixelCount(this.autoOverlayConfig);
-    try {
-      let a = await this.bot.drawOverlayPixelsBatch(o);
-      if (!a) {
-        this.status = `⚠️ ${f("autoOverlayStopped")}: ${f("autoOverlayNoTasks")}`, this.stopAutoOverlay();
-        return;
+      if(!this.autoOverlayConfig||this.autoOverlayTickRunning||!this.autoOverlayIntervalId)return;
+      this.autoOverlayTickRunning=true;this.bot.cancelDrawing=false;
+      this.refreshAutoOverlayStatusText();
+      try {
+        const image=this.getPaintImage();
+        if(!image){this.stopAutoOverlay();this.showPaintSelectionPrompt();return;}
+        this.paintSpeed=image.paintSpeed||1;
+        const count=await this.bot.drawOverlayPixelsBatch(this.resolveCyclePixelCount(this.autoOverlayConfig));
+        this.bot.assertAutomationReady();
+        if(!this.autoOverlayIntervalId)return;
+        const staged=[...(this.bot.stagedPixels?.values()||[])].some(entry=>{
+          if(entry.submittedAt)return false;
+          const [tileX,tileY]=entry.tile.split('/').map(Number),x=tileX*k+entry.x,y=tileY*k+entry.y;
+          return x>=image.position.globalX&&x<image.position.globalX+image.pixels.width&&y>=image.position.globalY&&y<image.position.globalY+image.pixels.height;
+        });
+        if(count>0||staged)await this.waitAndClickPaintButton({automatic:true});
+        else if(!image.tasks.length){this.stopAutoOverlay();this.showNativeNotice('AutoDraw: imagen terminada.');}
+        // With no charges, keep the timer active and try the complete next cycle.
+      } catch(error) {
+        if(!this.bot.cancelDrawing)this.bot.pauseAutomation(error.message||'No se pudo completar el ciclo de AutoDraw.');
+      } finally {
+        this.autoOverlayTickRunning=false;this.autoOverlayPendingTick=false;
+        if(this.autoOverlayIntervalId)this.scheduleAutoOverlayCycle();else this.refreshAutoOverlayStatusText();
       }
-      // Each image controls whether its prepared batch is confirmed automatically.
-      await this.waitAndClickPaintButton({ automatic: this.getPaintImage()?.confirmPaint !== false }), void 0;
-    } catch (a) {
-      if (this.bot.cancelDrawing) this.status = "AutoDraw detenido. Los píxeles preparados se conservan.";else this.bot.pauseAutomation(a.message || "Error de auto dibujo");
-    } finally {
-      this.autoOverlayTickRunning = false;
-      this.autoOverlayPendingTick = false;
-      if (this.autoOverlayIntervalId) this.scheduleAutoOverlayCycle();else this.refreshAutoOverlayStatusText();
     }
-  }
   saveAutoOverlayConfig(o) {
     this.autoOverlayConfig = o;
     const image = this.autoConfigImage || this.getPaintImage();
@@ -6743,7 +6729,7 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
     this.autoConfigImage = null;
     localStorage.setItem(ia, JSON.stringify(o)); $({
       autoDraw: this.toControlPixelSettings(o)
-    }), void 0;
+    });
   }
   resolveCyclePixelCount(config) {
     const pixels = Math.max(1, Math.floor(config.pixels));
@@ -6809,67 +6795,36 @@ ar con el mapa alejado. Un píxel preparado no equivale a una confirmación del 
     };
   }
   openAutoOverlayModal() {
-    const config = this.autoConfigImage?.autoDrawConfig || this.autoOverlayConfig || {
-      value: 1,
-      unit: 'minutes',
-      pixels: 60,
-      usePixelRange: false
-    };
-    const content = document.createElement('form');
-    content.className = 'shark-auto-settings';
-    content.innerHTML = "<label>Temporizador<div class=\"shark-auto-fields\"><input class=\"autofarm-value\" type=\"number\" min=\"1\"\
- max=\"1000000\" step=\"1\" required aria-label=\"Temporizador\"><select class=\"autofarm-unit\" aria-label=\"\
-Unidad de tiempo\"><option value=\"seconds\">Segundos</option><option value=\"minutes\">Minutos</option><optio\
-n value=\"hours\">Horas</option></select></div></label><label>Píxeles por ciclo<input class=\"autofarm-pixels\"\
- type=\"number\" min=\"1\" max=\"10000000\" step=\"1\" required></label><label class=\"shark-random-label\"><i\
-nput class=\"autofarm-use-range\" type=\"checkbox\">Randomizar</label><output class=\"shark-auto-range\"></out\
-put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Guardar configuración</button>";
-    const value = content.querySelector('.autofarm-value'),
-      unit = content.querySelector('.autofarm-unit'),
-      pixels = content.querySelector('.autofarm-pixels'),
-      random = content.querySelector('.autofarm-use-range');
-    value.value = config.value;
-    unit.value = config.unit;
-    pixels.value = config.pixels;
-    random.checked = config.usePixelRange;
-    const factor = () => unit.value === 'hours' ? 3600000 : unit.value === 'minutes' ? 60000 : 1000;
-    const preview = () => {
-      const n = Number(pixels.value),
-        ms = Number(value.value) * factor();
-      content.querySelector('.shark-auto-range').textContent = random.checked && n > 0 && ms > 0 ? '80–99 %: ' + Math.max(1, Math.ceil(n * .8)) + '–' + Math.max(1, Math.ceil(n * .8), Math.floor(n * .99)) + ' píxeles; espera de ' + Math.max(5000, Math.ceil(ms * .8)) / 1000 + '–' + Math.max(5000, Math.floor(ms * .99)) / 1000 + ' s entre ciclos.' : '';
-    };
-    content.oninput = preview;
-    preview();
-    content.onsubmit = event => {
-      event.preventDefault();
-      if (!content.reportValidity()) return;
-      const count = Number(pixels.value),
-        amount = Number(value.value),
-        timer = amount * factor();
-      if (!Number.isSafeInteger(count) || !Number.isSafeInteger(amount) || timer > 2147483647) {
-        content.querySelector('.shark-auto-error').textContent = 'Introduce números enteros y un tiempo máximo de 24 días.';
-        return;
-      }
-      this.saveAutoOverlayConfig({
-        value: amount,
-        unit: unit.value,
-        pixels: count,
-        usePixelRange: random.checked,
-        pixelRange: {
-          min: Math.max(1, Math.ceil(count * .8)),
-          max: Math.max(1, Math.ceil(count * .8), Math.floor(count * .99))
-        },
-        timerMs: timer
-      });
-      if (this.autoOverlayIntervalId && !this.autoOverlayTickRunning) {
-        clearTimeout(this.autoOverlayIntervalId);
-        this.scheduleAutoOverlayCycle();
-      }
-      this.refreshAutoOverlayStatusText();
-      this.closeWorkspacePanel();
-    };
-    this.openWorkspacePanel('Auto Draw', content, () => { this.autoConfigImage = null; });
-  }
+      const image=this.autoConfigImage||this.getPaintImage();
+      if(!image){this.showPaintSelectionPrompt();return;}
+      this.open=true;this.selectedGalleryImage=image;this.inlineAutoImage=image;
+      this.renderImagesList();
+      this.$images.querySelector('.shark-auto-settings')?.scrollIntoView({block:'nearest'});
+    }
+    renderInlineAutoSettings(image) {
+      if(!image)return;
+      const card=this.$images.querySelector('.shark-detail-active');if(!card)return;
+      card.querySelector('.shark-auto-settings')?.remove();
+      const config=image.autoDrawConfig||{value:1,unit:'minutes',pixels:60,usePixelRange:false};
+      const form=document.createElement('form');form.className='shark-auto-settings shark-auto-inline';
+      form.setAttribute('aria-label','Configuración de AutoDraw de '+(image.displayName||'imagen'));
+      form.innerHTML='<div class="shark-auto-heading"><strong>AutoDraw</strong><button type="button" class="shark-auto-close" aria-label="Cerrar ajustes de AutoDraw">×</button></div><label>Intervalo<div class="shark-auto-fields"><input name="amount" type="number" min="1" max="1000000" required aria-label="Intervalo de AutoDraw"><select name="unit" aria-label="Unidad del intervalo"><option value="seconds">Segundos</option><option value="minutes">Minutos</option><option value="hours">Horas</option></select></div></label><label>Píxeles por ciclo<input name="pixels" type="number" min="1" max="16000000" required></label><label class="shark-random-label"><input name="random" type="checkbox">Variar cantidad y espera (80–99 %)</label><p>Confirma cada tanda automáticamente. Si hay menos píxeles, utiliza los disponibles.</p><output class="shark-auto-error" role="status"></output><button type="submit">Guardar</button>';
+      form.elements.amount.value=config.value;form.elements.unit.value=config.unit;form.elements.pixels.value=config.pixels;form.elements.random.checked=!!config.usePixelRange;
+      form.querySelector('.shark-auto-close').onclick=()=>{this.inlineAutoImage=null;this.autoConfigImage=null;form.remove();};
+      form.onsubmit=event=>{
+        event.preventDefault();
+        if(!form.reportValidity())return;
+        const amount=Number(form.elements.amount.value),pixels=Number(form.elements.pixels.value),unit=form.elements.unit.value;
+        const timerMs=amount*(unit==='hours'?3600000:unit==='minutes'?60000:1000);
+        if(!Number.isSafeInteger(amount)||!Number.isSafeInteger(pixels)||timerMs>2147483647){form.querySelector('output').textContent='Usa cantidades enteras y un intervalo máximo de 24 días.';return;}
+        this.autoConfigImage=image;
+        this.saveAutoOverlayConfig({value:amount,unit,pixels,timerMs,usePixelRange:form.elements.random.checked,pixelRange:{min:Math.max(1,Math.ceil(pixels*.8)),max:Math.max(1,Math.floor(pixels*.99))}});
+        if(this.autoOverlayIntervalId&&!this.autoOverlayTickRunning){clearTimeout(this.autoOverlayIntervalId);this.scheduleAutoOverlayCycle();}
+        form.querySelector('output').textContent='Configuración guardada para esta imagen.';
+        this.refreshAutoOverlayStatusText();
+      };
+      card.append(form);
+    }
   getCurrentWplaceLocation() {
     let o = w => {
         let n = new URLSearchParams(w.replace(/^#/, "").replace(/^\?/, "")),
@@ -6934,19 +6889,23 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
   handleKeyboard(o) {
     if ($o(o.target)) return;
     if (F(o, A.toggleWidget)) {
-      o.preventDefault(), this.open = !this.open, void 0;
+      o.preventDefault();
+      this.open = !this.open;
       return;
     }
     if (F(o, A.minimizeWidget)) {
-      o.preventDefault(), this.open = !1, void 0;
+      o.preventDefault();
+      this.open = !1;
       return;
     }
     if (F(o, A.showWidgetPanel)) {
-      o.preventDefault(), this.open = !0, void 0;
+      o.preventDefault();
+      this.open = !0;
       return;
     }
     if (F(o, A.hideWidgetPanel)) {
-      o.preventDefault(), this.open = !1, void 0;
+      o.preventDefault();
+      this.open = !1;
       return;
     }
     if (F(o, A.showShortcuts)) {
@@ -7040,6 +6999,12 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
     throw new Error(this.bot.pauseReason);
   }
   async drawAndClickPaintWhenReady() {
+    if(this.getPaintImage()?.isDeferred){
+      if(this.loadingPaintStart)return;this.loadingPaintStart=true;
+      let image;try{image=await this.loadGalleryImage(this.getPaintImage(),true);}finally{this.loadingPaintStart=false;}
+      if(!image)return;
+    }
+    if(this.loadingGalleryImage){this.showNativeNotice('Espera a que termine de cargar la plantilla.');return;}
     if (this.updateRequired) { macrosharkShowUpdate(this.updateRequired); return; }
     if (!this.getPaintImage()) { this.showPaintSelectionPrompt(); return; }
     if (this.drawActionRunning) {
@@ -7055,6 +7020,9 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
     this.manualConfirmation = image.confirmPaint === false;
     this.syncActionButtons();
     try {
+      await this.bot.openColors();
+      this.open=false;
+      if(document.activeElement?.closest?.('.wwidget'))document.activeElement.blur();
       await this.bot.draw({
         refreshMapAfterDraw: false
       });
@@ -7096,34 +7064,23 @@ put><p class=\"shark-auto-error\" role=\"status\"></p><button type=\"submit\">Gu
     })), o.click();
   }
   async triggerNativePaintClickWithChallengeRecovery(button) {
-    this.bot.assertAutomationReady();
-    await Q(Math.max(0, (this.nextPaintAt || 0) - Date.now()));
-    this.bot.assertAutomationReady();
-    this.bot.assertPaletteOpen();
-    this.nextPaintAt = Date.now() + 5000;
-    this.paintSubmissionRunning = true;
-    try {
-      const outcome = this.waitForPaintAttemptOutcome(10000);
-      this.triggerNativePaintClick(button);
-      const result = await outcome;
-      if (result !== 'painted') {
-        this.bot.pauseAutomation('Pintado sin confirmación (' + result + '). Revisa el mapa y resincroniza; no se reenviará automáticamente.');
-        throw new Error(this.bot.pauseReason);
-      }
-      await this.bot.refreshMapAfterPaint();
-      if (this.autoOverlayIntervalId && !this.bot.pauseReason && !this.bot.cancelDrawing) {
-        await this.bot.openColors();
-        await Q(300);
-        if (!this.bot.isPaletteOpen()) {
-          this.bot.pauseAutomation('La paleta no se reabrió después de pintar. Ábrela para actualizar el estado.');
+      this.bot.assertAutomationReady();
+      await Q(Math.max(0,(this.nextPaintAt||0)-Date.now()));
+      this.bot.assertAutomationReady();this.bot.assertPaletteOpen();
+      this.nextPaintAt=Date.now()+5000;this.paintSubmissionRunning=true;
+      try {
+        const outcome=this.waitForPaintAttemptOutcome(10000);
+        this.triggerNativePaintClick(button);
+        const result=await outcome;
+        if(result!=='painted'){
+          this.bot.pauseAutomation('Pintado sin confirmación ('+result+'). Revisa el mapa antes de continuar.');
           throw new Error(this.bot.pauseReason);
         }
-      }
-      return true;
-    } finally {
-      this.paintSubmissionRunning = false;
+        await this.bot.refreshMapAfterPaint();
+        // The next cycle owns reopening the palette; it may stay closed during the wait.
+        return true;
+      } finally {this.paintSubmissionRunning=false;}
     }
-  }
   async waitForPaintAttemptOutcome(timeout) {
     return new Promise(resolve => {
       let finished = false;
@@ -7217,24 +7174,28 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
     return sharkSourceCanvas(image, width);
   }
   syncActionButtons() {
-    if (!this.$draw || !this.$autoOverlayStart) return;
-    if (this.updateRequired) {
-      this.$draw.disabled = true;
-      this.$autoOverlayStart.disabled = true;
+    if(!this.$draw||!this.$autoOverlayStart)return;
+    if(this.updateRequired){this.$draw.disabled=true;this.$autoOverlayStart.disabled=true;}
+    const drawing=!!this.drawActionRunning,active=!!this.autoOverlayIntervalId,autoBusy=active||!!this.autoOverlayTickRunning;
+    this.$draw.querySelector('span').textContent=drawing?'Detener dibujo':'Dibujar';
+    this.$draw.classList.toggle('shark-running',drawing);
+    this.$autoOverlayStart.querySelector('span').textContent=active?'Detener AutoDraw':'Iniciar AutoDraw';
+    this.$autoOverlayStart.classList.toggle('shark-running',active);this.$autoOverlayStart.setAttribute('aria-pressed',String(active));
+    if(this.$quickDraw){
+      this.$quickDraw.disabled=this.$draw.disabled;
+      this.$quickAuto.disabled=!!this.updateRequired;
+      this.$quickDraw.classList.toggle('shark-running',drawing);this.$quickDraw.title=drawing?'Detener dibujo':'Dibujar';
+      this.$quickAuto.classList.toggle('shark-running',active);this.$quickAuto.title=active?'Detener AutoDraw':'Iniciar AutoDraw';
     }
-    this.$draw.querySelector('span').textContent = this.drawActionRunning ? 'Detener dibujo' : 'Dibujar';
-    this.$draw.classList.toggle('shark-running', !!this.drawActionRunning);
-    const active = !!this.autoOverlayIntervalId;
-    this.$autoOverlayStart.querySelector('span').textContent = active ? 'Detener AutoDraw' : 'Iniciar AutoDraw';
-    this.$autoOverlayStart.classList.toggle('shark-running', active);
-    this.$autoOverlayStart.setAttribute('aria-pressed', String(active));
-    if (this.$quickDraw) {
-      this.$quickDraw.disabled = this.$draw.disabled;
-      this.$quickAuto.disabled = !!this.updateRequired;
-      this.$quickDraw.classList.toggle('shark-running', !!this.drawActionRunning);
-      this.$quickDraw.title = this.drawActionRunning ? 'Detener dibujo' : 'Dibujar';
-      this.$quickAuto.classList.toggle('shark-running', active);
-      this.$quickAuto.title = active ? 'Detener AutoDraw' : 'Iniciar AutoDraw';
+    for(const card of this.$images?.querySelectorAll('.shark-gallery-card')||[]){
+      const own=card.sharkImage===this.getPaintImage(),draw=card.querySelector('.shark-card-draw'),auto=card.querySelector('.shark-card-auto');
+      if(!draw||!auto)continue;
+      draw.querySelector('span').textContent=drawing&&own?'Detener pintado':'Empezar a pintar';
+      draw.disabled=!!this.updateRequired||autoBusy||(!drawing&&this.$draw.disabled)||(drawing&&!own);
+      draw.classList.toggle('shark-running',drawing&&own);draw.setAttribute('aria-pressed',String(drawing&&own));
+      auto.querySelector('span').textContent=autoBusy&&own?'Detener AutoDraw':'Iniciar AutoDraw';
+      auto.disabled=!!this.updateRequired||drawing||(autoBusy&&!own);
+      auto.classList.toggle('shark-running',autoBusy&&own);auto.setAttribute('aria-pressed',String(autoBusy&&own));
     }
   }
   installReferencePreview() {
@@ -7256,9 +7217,16 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
       sync();
     };
     sync();
+    macrosharkObserveTheme(this);
     this.registerEvent(window, 'resize', () => this.bot.scheduleReferencePreview());
   }
   installWorkspacePanels() {
+    const capture=this.element.querySelector('.capture-template');
+    capture.classList.add('shark-capture-global');
+    capture.querySelector('span').textContent='Captura';
+    capture.type='button';capture.title='Capturar imagen del mapa';capture.setAttribute('aria-label','Capturar imagen del mapa');
+    const tools=this.element.querySelector('.widget-image-actions');
+    tools.insertBefore(capture,tools.querySelector('.macroshark-inline-file'));
     this.element.querySelector('.shark-open-paint').onclick = () => {
       const content = this.element.querySelector('.shark-paint-settings');
       this.openWorkspacePanel('Configurar pintado', content, () => this.element.querySelector('.shark-settings-storage').append(content));
@@ -7370,7 +7338,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
         canvas.naturalWidth = width;
         canvas.naturalHeight = height;
         canvas.src = canvas.toDataURL('image/png');
-        state.base = new q(this.bot, canvas, width);
+        state.base = new SharkPixelData(this.bot, canvas, width);
       }
       const base = state.base,
         indices = base.indices.slice(),
@@ -7415,7 +7383,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
       snapshot.naturalWidth = width;
       snapshot.naturalHeight = height;
       snapshot.src = snapshot.toDataURL('image/png');
-      state.result = new q(this.bot, snapshot, width, false, {
+      state.result = new SharkPixelData(this.bot, snapshot, width, false, {
         width,
         height,
         palette: 1,
@@ -7509,7 +7477,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
         await this.waitForMobileReady();
         await this.waitForStableViewportProjection();
         if (state.closed) return;
-        const image = new S(this.bot, J.fromScreenPosition(this.bot, this.defaultImageScreenPosition()), pixels);
+        const image = new SharkImage(this.bot, SharkMapPosition.fromScreenPosition(this.bot, this.defaultImageScreenPosition()), pixels);
         this.bot.images.push(image);
         H(this.bot, true);
         this.update();
@@ -7642,7 +7610,7 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
     let resumeWhenOpen = false;
     const timer = setInterval(() => {
       const paletteOpen = this.bot.isPaletteOpen();
-      if ((this.bot.drawingPixels || this.autoOverlayIntervalId || this.autoOverlayTickRunning) && !this.paintSubmissionRunning && !this.bot.pauseReason && !paletteOpen) this.bot.pauseAutomation('Barra de colores cerrada. Ábrela para actualizar el estado.');
+      if ((this.bot.drawingPixels || this.autoOverlayTickRunning) && !this.bot.openingPalette && !this.paintSubmissionRunning && !this.bot.pauseReason && !paletteOpen) this.bot.pauseAutomation('Barra de colores cerrada. Ábrela para actualizar el estado.');
       if (this.isChallengeBlockingPaint() && !this.bot.pauseReason) this.bot.pauseAutomation('Verificación detectada. Resuélvela y vuelve a abrir la barra de colores.');
       if (paletteOpen && !paletteWasOpen) resumeWhenOpen = true;
       if (!paletteOpen) resumeWhenOpen = false;
@@ -7656,6 +7624,46 @@ utton type=\"button\" class=\"cancel-import\">Cancelar</button></form>";
   }
   pixelPreparationDelay() {
     return Math.max(10, Math.floor(40 / (this.paintSpeed || 1)));
+  }
+
+  openImageExport(image) {
+      const dialog=document.createElement('dialog');dialog.className='macroshark-modal shark-export-dialog';
+      dialog.setAttribute('aria-label','Descargar imagen');
+      dialog.innerHTML='<div class="macroshark-modal-head"><strong>Descargar imagen</strong><button type="button" aria-label="Cerrar descarga">×</button></div><form><label>Formato<select name="format"><option value="wplace">Plantilla WPlace (.wplace)</option><option value="png">Imagen PNG · con transparencia</option><option value="jpg">Imagen JPG · fondo blanco</option></select></label><p>La plantilla conserva su ubicación. PNG y JPG guardan la imagen.</p><output role="status"></output><button type="submit">Descargar</button></form>';
+      dialog.querySelector('button').onclick=()=>dialog.close();
+      dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+      dialog.querySelector('form').onsubmit=async event=>{
+        event.preventDefault();const submit=event.currentTarget.querySelector('[type=submit]');submit.disabled=true;
+        try {await macrosharkExportImage(image,event.currentTarget.elements.format.value);dialog.close();}
+        catch(error){dialog.querySelector('output').textContent=error.message;}
+        finally{submit.disabled=false;}
+      };
+      document.body.append(dialog);dialog.showModal();
+    }
+
+  installImagePaintActions(card,image) {
+    card.sharkImage=image;
+    macrosharkInstallImageCoordinates(this,card,image);
+    const visual=document.createElement('div');visual.className='shark-detail-visual';
+    const preview=card.querySelector('.preview'),controls=card.querySelector('.image-controls');
+    card.insertBefore(visual,preview);
+    const starts=document.createElement('div');starts.className='shark-paint-starts';
+    starts.innerHTML='<button type="button" class="shark-card-draw"><i class="fa-solid fa-pen-nib" aria-hidden="true"></i><span>Empezar a pintar</span></button><button type="button" class="shark-card-auto"><i class="fa-solid fa-play" aria-hidden="true"></i><span>Iniciar AutoDraw</span></button>';
+    visual.append(preview,controls,starts);
+    starts.querySelector('.shark-card-draw').onclick=()=>{
+      if(this.drawActionRunning){this.bot.cancelDrawing=true;return;}
+      if(this.autoOverlayIntervalId||this.autoOverlayTickRunning)return;
+      this.selectPaintImage(image,false);
+      if(this.getPaintImage()===image)this.$draw.click();
+    };
+    starts.querySelector('.shark-card-auto').onclick=()=>{
+      if(this.autoOverlayIntervalId||this.autoOverlayTickRunning){this.stopAutoOverlay();return;}
+      if(this.drawActionRunning)return;
+      this.selectPaintImage(image,false);
+      if(this.getPaintImage()!==image)return;
+      if(!image.autoDrawConfig){this.autoConfigImage=image;this.openAutoOverlayModal();this.showNativeNotice('Configura AutoDraw y guarda los ajustes antes de iniciarlo.');return;}
+      this.$autoOverlayStart.click();
+    };
   }
 }
 var al = 2;
@@ -7681,7 +7689,87 @@ function ll() {
 }
 var fa = "[MACROSHARK]",
   ta = "macroshark-access-locked";
-class ba {
+// Saved templates stay as metadata until the user requests their full pixels.
+class SharkDeferredImage {
+  isDeferred=true;
+  constructor(bot,raw){
+    this.bot=bot;this.raw=raw;this.position=SharkMapPosition.fromJSON(bot,raw.position);
+    for(const key of ['strategy','opacity','drawTransparentPixels','drawColorsInOrder','skipUnavailableColors','colors','lock','displayName','nativeOverlayId','nativeOverlayRevision','nativeImageSignature','paintSpeed','confirmPaint','autoDrawConfig','paintSelected'])this[key]=raw[key];
+    this.colors=raw.colors||[];this.paintSpeed=raw.paintSpeed||1;this.confirmPaint=raw.confirmPaint!==false;
+    this.pixels={width:raw.pixels?.width||raw.pixels?.indexed?.width||0,height:raw.pixels?.height||raw.pixels?.indexed?.height||0,image:{src:raw.galleryPreview||''}};
+    this.tasks={length:0};this.element=document.createElement('div');this.$previewDialog={open:false};
+  }
+  toJSON(){return {...this.raw,position:this.position.toJSON(),strategy:this.strategy,opacity:this.opacity,drawTransparentPixels:this.drawTransparentPixels,drawColorsInOrder:this.drawColorsInOrder,skipUnavailableColors:this.skipUnavailableColors,colors:this.colors,lock:this.lock,displayName:this.displayName||'',nativeOverlayId:this.nativeOverlayId,nativeOverlayRevision:this.nativeOverlayRevision,nativeImageSignature:this.nativeImageSignature,paintSpeed:this.paintSpeed,confirmPaint:this.confirmPaint,autoDrawConfig:this.autoDrawConfig,paintSelected:!!this.paintSelected};}
+  update(){} updatePlacement(){} updateTasks(){} updateColors(){} applyLocale(){}
+  openColorPanel(){void this.bot.widget.loadGalleryImage(this,true).then(image=>image?.openColorPanel());}
+  destroy(){this.removed=true;const index=this.bot.images.indexOf(this);if(index>=0)this.bot.images.splice(index,1);this.bot.widget.update();H(this.bot);}
+}
+function macrosharkGalleryPreview(image){
+  if(image.galleryPreview)return image.galleryPreview;
+  const canvas=document.createElement('canvas'),scale=Math.min(1,160/image.pixels.width,100/image.pixels.height);
+  canvas.width=Math.max(1,Math.round(image.pixels.width*scale));canvas.height=Math.max(1,Math.round(image.pixels.height*scale));
+  const context=canvas.getContext('2d');context.imageSmoothingEnabled=false;context.drawImage(image.pixels.canvas,0,0,canvas.width,canvas.height);
+  return image.galleryPreview=canvas.toDataURL('image/png');
+}
+function macrosharkRenderDeferredCard(widget,image,index,fragment){
+  const card=document.createElement('div');card.className='image shark-gallery-card shark-deferred-card';card.sharkImage=image;
+  card.classList.toggle('shark-paint-target',!!image.paintSelected);
+  const loading=widget.loadingGalleryImage===image;
+  card.setAttribute('aria-busy',String(loading));
+  card.innerHTML='<button class="preview" type="button"><span class="shark-template-placeholder" aria-hidden="true">▧</span></button><div class="shark-card-heading"><strong class="shark-card-name"></strong><span class="shark-card-size"></span></div><p class="shark-template-state" role="status"></p>';
+  card.querySelector('.shark-card-name').textContent=image.displayName||'Plantilla '+(index+1);
+  card.querySelector('.shark-card-size').textContent=image.pixels.width&&image.pixels.height?image.pixels.width+' × '+image.pixels.height:'';
+  const button=card.querySelector('.preview');button.title='Cargar y seleccionar esta plantilla';button.disabled=!!widget.loadingGalleryImage;
+  const thumbnail=image.raw.galleryPreview;
+  if(thumbnail&&/^data:image\/png;base64,/.test(thumbnail)&&thumbnail.length<100000){const img=document.createElement('img');img.alt='Miniatura de la plantilla';img.loading='lazy';img.src=thumbnail;button.replaceChildren(img);}
+  const state=card.querySelector('.shark-template-state');
+  state.textContent=loading?'Cargando plantilla…':image.loadError?'No se pudo cargar. Toca para reintentar.':'Toca para cargar';
+  if(loading)state.classList.add('shark-template-loading');
+  button.onclick=()=>void widget.loadGalleryImage(image,true);
+  fragment.append(card);
+}
+async function macrosharkLoadGalleryImage(widget,image,detail=true){
+  if(!image)return null;
+  if(!image.isDeferred)return image;
+  if(widget.loadingGalleryImage)return widget.loadingGalleryImage===image?widget.galleryLoadPromise:null;
+  if(widget.drawActionRunning||widget.autoOverlayTickRunning){widget.showNativeNotice('Detén el pintado antes de cambiar de imagen.');return null;}
+  if(widget.autoOverlayIntervalId)widget.stopAutoOverlay();
+  widget.loadingGalleryImage=image;image.loadError=null;widget.selectedGalleryImage=null;widget.open=true;widget.renderImagesList();
+  widget.galleryLoadPromise=(async()=>{
+    let loaded;
+    try{
+      // Paint the waiting state before decoding or analysing the selected bitmap.
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      loaded=await SharkImage.fromJSON(widget.bot,image.toJSON());
+      const index=widget.bot.images.indexOf(image);
+      if(index<0)throw new Error('La plantilla ya no está en la lista.');
+      widget.bot.images[index]=loaded;
+      loaded.galleryPreview=image.raw.galleryPreview||'';
+      for(const other of [...widget.bot.images]){
+        if(other===loaded||other.isDeferred)continue;
+        const at=widget.bot.images.indexOf(other),raw=other.toJSON();raw.galleryPreview=macrosharkGalleryPreview(other);
+        other.destroy();widget.bot.images.splice(at,0,new SharkDeferredImage(widget.bot,raw));
+        other.pixels.image.src='';other.pixels.canvas.width=other.pixels.canvas.height=1;
+      }
+      widget.bot.clearReferenceTiles();
+      widget.selectedGalleryImage=detail?loaded:null;widget.selectPaintImage(loaded,false);
+      loaded.update();
+      await widget.bot.readMap();widget.bot.updateTasks();
+      H(widget.bot,true);
+      return loaded;
+    }catch(error){
+      if(loaded){const index=widget.bot.images.indexOf(loaded);if(index>=0){loaded.destroy();widget.bot.images.splice(index,0,image);}}
+      widget.selectedGalleryImage=null;image.loadError=error.message;
+      widget.showNativeNotice('No se pudo cargar la plantilla: '+error.message);
+      return null;
+    }finally{
+      widget.loadingGalleryImage=null;widget.galleryLoadPromise=null;widget.renderImagesList();widget.syncActionButtons();
+    }
+  })();
+  return widget.galleryLoadPromise;
+}
+
+class SharkBot {
   unavailableColors = new Set();
   mapsCache = new Map();
   stagedPixels = new Map();
@@ -7696,7 +7784,6 @@ class ba {
   }
   markerPixelPositionResolvers = [];
   lastColor;
-  controlSession = to();
   controlAccessAllowed = !1;
   controlAccessHardDenied = !1;
   lastControlAccessFailureReason;
@@ -7757,9 +7844,10 @@ class ba {
       }
       this.strategy = "SEQUENTIAL";
     }
-    this.registerFetchInterceptor(), this.log("Fetch interceptor registered"), void 0;
+    this.registerFetchInterceptor();
+    this.log("Fetch interceptor registered");
     let i = document.createElement("style");
-    i.textContent = vo.replace("FAKE_FAVORITE_LOCATIONS", O.length.toString()) + "\n/* Self-contained MacroShark SVG icons: no fonts or CDN. */\n.fa-solid{display:inline-block;width:1em;heigh\
+    i.textContent = SHARK_STYLES.replace("FAKE_FAVORITE_LOCATIONS", O.length.toString()) + "\n/* Self-contained MacroShark SVG icons: no fonts or CDN. */\n.fa-solid{display:inline-block;width:1em;heigh\
 t:1em;min-width:1em;vertical-align:-.125em;background-color:currentColor;mask:var(--macroshark-icon) center/co\
 ntain no-repeat;-webkit-mask:var(--macroshark-icon) center/contain no-repeat;font-style:normal}.fa-solid::befo\
 re{content:none!important}\n.fa-palette{--macroshark-icon:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A\
@@ -7888,7 +7976,7 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
       }));
       if (!i.isConnected) document.head.append(i);
       if (this.log("Widget initialization flow started"), false) return;
-      await this.ensureControlAccess(), document.body.classList.remove(ta), this._widget = new jo(this), globalThis.macrosharkPendingUpdate && this.widget.requireUpdate(globalThis.macrosharkPendingUpdate), await this.widget.run(f("taskInitializing"), async () => {
+      await this.ensureControlAccess(), document.body.classList.remove(ta), this._widget = new SharkWidget(this), globalThis.macrosharkPendingUpdate && this.widget.requireUpdate(globalThis.macrosharkPendingUpdate), await this.widget.run(f("taskInitializing"), async () => {
         let s = await this.waitForElement("canvas", ".maplibregl-canvas-container");
         if (new MutationObserver(c => {
           for (let g = 0; g < c.length; g++) if (c[g].removedNodes.length !== 0) {
@@ -7902,15 +7990,23 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
           subtree: !0
         }), this.updateStars(), this.startMobileMapTracking(), this.log("Stars updated after boot", {
           stars: this.$stars.length
-        }), await Q(500), await this.updateColors(), a) for (let c = 0; c < a.images.length; c++) {
-          let g = await S.fromJSON(this, a.images[c]);
+        }), a) for (let c = 0; c < a.images.length; c++) {
+          let g = new SharkDeferredImage(this, a.images[c]);
           this.images.push(g), g.update();
         }
         const savedSelection = this.images.find(image => image.paintSelected);
-        if (savedSelection) this.widget.selectPaintImage(savedSelection, false);
+        if(savedSelection){this.widget.paintSpeed=savedSelection.paintSpeed;this.widget.manualConfirmation=savedSelection.confirmPaint===false;this.widget.autoOverlayConfig=savedSelection.autoDrawConfig||null;}
         this.log("Saved images restored", {
           images: this.images.length
-        }), await this.readMap(), this.updateTasks(), this.widget.setDisabled("draw", !1), this.widget.setDisabled("draw-and-paint", !1), this.widget.setDisabled("add-image", !1), this.widget.setDisabled("capture-template", !1), this.mobileReady = true, globalThis.macrosharkPendingUpdate && this.widget.requireUpdate(globalThis.macrosharkPendingUpdate), this.log("Initialization completed; controls enabled"), void 0;
+        });
+        this.widget.update();
+        this.widget.setDisabled("draw", !1);
+        this.widget.setDisabled("draw-and-paint", !1);
+        this.widget.setDisabled("add-image", !1);
+        this.widget.setDisabled("capture-template", !1);
+        this.mobileReady = true;
+        globalThis.macrosharkPendingUpdate && this.widget.requireUpdate(globalThis.macrosharkPendingUpdate);
+        this.log("Initialization completed; controls enabled");
       });
     })().catch(error => {
       this.mobileInitializationError = error;
@@ -7920,35 +8016,9 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
     });
   }
   async ensureControlAccess() {
-    try {
-      sessionStorage.removeItem(Y);
-      localStorage.removeItem(Y);
-      localStorage.removeItem(Co);
-      localStorage.removeItem(Go);
-    } catch {}
-    this.controlSession = {
-      accessToken: "local-only",
-      expiresAt: null,
-      user: {
-        isActive: true,
-        name: "local"
-      },
-      serial: {
-        valid: true,
-        status: "local",
-        username: "local"
-      },
-      access: {
-        allowed: true,
-        mode: "local"
-      },
-      settings: {}
-    };
-    this.controlAccessAllowed = true;
-    this.controlAccessHardDenied = false;
-    this.lastControlAccessFailureReason = void 0;
-    return;
-  }
+      // Retire local keys from the removed account-control service.
+      try { sessionStorage.removeItem(Y); localStorage.removeItem(Y); localStorage.removeItem(Co); localStorage.removeItem(Go); } catch {}
+    }
   isControlAccessAllowed() {
     return true;
   }
@@ -7958,38 +8028,35 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
   getPageWindow() {
     return globalThis.unsafeWindow ?? globalThis;
   }
-  async withTimeout(o, a, l) {
-    return l;
-  }
-  async syncAccountInfoWithControl() {
-    return {
-      ok: true,
-      cookieStatus: {
-        hasToken: false,
-        source: "disabled"
-      }
-    };
-  }
+  
+  
   getTotalPendingTasks() {
     return this._widget?.getPaintImage()?.tasks.length || 0;
   }
-  draw(o = {}) {
+  async draw(o = {}) {
     if (this._widget?.updateRequired) return Promise.reject(new Error('Actualiza MacroShark antes de pintar.'));
     if (!this.ensureFeatureAccess("draw")) return Promise.resolve();
+    if(this.widget.loadingGalleryImage)return;
+    if(this.widget.getPaintImage()?.isDeferred&&!await this.widget.loadGalleryImage(this.widget.getPaintImage(),false))return;
     const paintImage = this.widget.getPaintImage();
     if (!paintImage) { this.widget.showPaintSelectionPrompt(); return Promise.resolve(); }
     const paintImages = [paintImage];
     this.log("Draw requested", {
       strategy: this.strategy,
       images: this.images.length
-    }), this.widget.setDisabled("draw", !0), this.widget.setDisabled("draw-and-paint", !0), this.widget.status = "", void 0;
+    });
+    this.widget.setDisabled("draw", !0);
+    this.widget.setDisabled("draw-and-paint", !0);
+    this.widget.status = "";
     let a = document.querySelector(".maplibregl-canvas"),
       l = i => {
         if (!i.shiftKey) i.stopPropagation();
       };
     return this.widget.run(f("taskDrawing"), async () => {
       await this.widget.run(f("taskInitializingDraw"), async () => {
+        await this.openColors();
         await this.updateColors();
+
         await this.readMap();
       }), globalThis.addEventListener("mousemove", l, !0), a.addEventListener("wheel", l, !0), this.updateTasks();
       let i = await this.request("https://backend.wplace.live/me", {
@@ -8052,7 +8119,7 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
       this.log("Draw flow finished", {
         remainingCharges: r,
         remainingTasks: g
-      }), void 0;
+      });
     }, () => {
       this.drawingPixels = false;
       globalThis.removeEventListener("mousemove", l, !0), a?.removeEventListener("wheel", l, !0), this.widget.setDisabled("draw", !1), this.widget.setDisabled("draw-and-paint", !1);
@@ -8060,7 +8127,9 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
   }
   refreshMapAfterPaint() {
     return this.widget.run(f("taskReadingMap"), async () => {
-      await this.readMap(), this.updateTasks(), this.widget.update(), void 0;
+      await this.readMap();
+      this.updateTasks();
+      this.widget.update();
     });
   }
   toJSON() {
@@ -8095,66 +8164,68 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
     });
   }
   async moveMap(offset) {
-    const canvas = document.querySelector('.maplibregl-canvas');
-    if (!canvas || ![offset.x, offset.y].every(Number.isFinite)) throw new Error('No se pudo calcular la posición del mapa. Recarga la página.');
-    if (this.mapMovePending) return false;
-    this.mapMovePending = true;
-    const rect = canvas.getBoundingClientRect();
-    const startX = rect.left + rect.width / 2,
-      startY = rect.top + rect.height / 2;
-    const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
-    const emit = (type, x, y, buttons) => canvas.dispatchEvent(new MouseEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      clientX: x,
-      clientY: y,
-      button: 0,
-      buttons
-    }));
-    let x = startX,
-      y = startY,
-      pressed = false;
-    try {
-      canvas.focus({
-        preventScroll: true
-      });
-      emit('mousedown', x, y, 1);
-      pressed = true;
-      // MapLibre applies drags on animation frames; a single synchronous move
-      // can be discarded before crossing the drag threshold.
-      for (let step = 1; step <= 8; step++) {
-        x = startX - offset.x * step / 8;
-        y = startY - offset.y * step / 8;
-        emit('mousemove', x, y, 1);
-        await frame();
-      }
-      // Let the map settle before release so inertia does not overshoot.
-      await new Promise(resolve => setTimeout(resolve, 180));
-      emit('mouseup', x, y, 0);
-      pressed = false;
-      await frame();
-      await frame();
-      this.updateStars();
-      this.updateImages();
-      return true;
-    } finally {
-      if (pressed) emit('mouseup', x, y, 0);
-      this.mapMovePending = false;
-    }
+    if(this.mapMovePending)return false;
+    this.mapMovePending=true;
+    try{return await this.dragMapStep(offset);}finally{this.mapMovePending=false;}
   }
-  async readMap() {
-    // WPlace keeps unconfirmed pixels in its editor, not in its map tiles.
-    // Preserve that local batch when a new Draw action refreshes the tiles.
-    const emptyPaintQueue = this.stagedPixels.size > 0 && this.isPaletteOpen() && Array.from(document.querySelectorAll('button,span,label,h1,h2,h3,div')).some(element => {
-      if (!/^(Pintar p[ií]xel|Paint pixel)\s*\(0\)$/i.test(element.textContent?.trim() || '')) return false;
-      const rect = element.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== 'hidden' && !element.closest('[hidden],[aria-hidden="true"]');
-    });
-    if (emptyPaintQueue) {
-      for (const [key, entry] of this.stagedPixels) if (!entry.submittedAt) this.stagedPixels.delete(key);
+  async dragMapStep(offset) {
+    const canvas=document.querySelector('.maplibregl-canvas');
+    if(!canvas||![offset.x,offset.y].every(Number.isFinite))throw new Error('El mapa todavía no está disponible.');
+    const distance=Math.hypot(offset.x,offset.y);
+    if(!distance)return true;
+    if(distance<4){
+      const extra={x:offset.x/distance*8,y:offset.y/distance*8};
+      await this.dragMapStep(extra);
+      return this.dragMapStep({x:offset.x-extra.x,y:offset.y-extra.y});
     }
+    const r=canvas.getBoundingClientRect(),start={x:r.left+r.width*.5,y:r.top+r.height*.5};
+    const frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+    const emit=(type,x,y,buttons)=>{
+      const event=new MouseEvent(type,{bubbles:true,cancelable:true,view:window,clientX:x,clientY:y,button:0,buttons});
+      Object.defineProperties(event,{clientX:{value:x},clientY:{value:y}});
+      return (type==='mousemove'?document:canvas).dispatchEvent(event);
+    };
+    // MapLibre observes document moves; WPlace's painting listener is on window.
+    // Keep a navigation gesture from drawing while native Space is being held.
+    const mute=event=>{if(!event.isTrusted)event.stopPropagation();};
+    document.addEventListener('mousemove',mute);
+    let pressed=false,x=start.x,y=start.y;
+    try {
+      canvas.focus({preventScroll:true});emit('mousedown',x,y,1);pressed=true;
+      for(let step=1;step<=8;step++){
+        x=start.x-offset.x*step/8;y=start.y-offset.y*step/8;
+        emit('mousemove',x,y,1);await frame();
+      }
+      await Q(180);emit('mousemove',x,y,1);await frame();emit('mouseup',x,y,0);pressed=false;
+      await frame();await frame();this.updateStars();this.updateImages();
+      return true;
+    } finally {if(pressed)emit('mouseup',x,y,0);document.removeEventListener('mousemove',mute);}
+  }
+  async focusMapPosition(position) {
+    if(this.mapMovePending)return false;
+    this.mapMovePending=true;
+    try {
+      const connection=await macrosharkConnectMap(this);
+      if(connection){const result=await connection.call('focus',{x:position.globalX,y:position.globalY});if(result?.ok){await new Promise(resolve=>requestAnimationFrame(resolve));this.updateStars();this.updateImages();return true;}}
+      // Restore the previous multi-frame gesture if the native map is inaccessible.
+      const r=document.querySelector('.maplibregl-canvas')?.getBoundingClientRect();
+      if(!r)throw new Error('El mapa todavía no está disponible.');
+      this.updateStars();
+      const screen=position.toScreenPosition();
+      if(![screen.x,screen.y].every(Number.isFinite))throw new Error('No se pudo leer la posición del mapa. Recarga WPlace.');
+      const dx=screen.x-(r.left+r.width*.5),dy=screen.y-(r.top+r.height*.5);
+      if(Math.hypot(dx,dy)>1)await this.dragMapStep({x:dx,y:dy});
+      return true;
+    } catch(error){this.widget.showNativeNotice('No se pudo ir a la imagen: '+error.message);return false;}
+    finally{this.mapMovePending=false;}
+  }
+  
+  
+  async readMap() {
+    const previousPendingTiles=new Set([...this.stagedPixels.values()].map(entry=>entry.tile));
     const required = new Set();
     for (const image of this.images) {
+      if(image.isDeferred)continue;
       const signature = [image.position.globalX, image.position.globalY, image.pixels.analysisVersion, image.drawTransparentPixels, image.skipUnavailableColors, image.colors.map(c => c.realColor + ':' + !!c.disabled).join(','), [...this.unavailableColors].join(',')].join('|');
       if (image.tileSignature !== signature) {
         const keys = new Set(),
@@ -8176,19 +8247,10 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
     let done = 0;
     await this.widget.run(f('taskReadingMap'), async () => {
       for (const key of required) {
-        const next = await q.fromJSON(this, {
+        const next = await SharkPixelData.fromJSON(this, {
           url: 'https://backend.wplace.live/files/s0/tiles/' + key + '.png?ts=' + Date.now(),
           exactColor: true
         });
-        for (const [pixelKey, entry] of this.stagedPixels) {
-          if (entry.tile !== key) continue;
-          const index = entry.y * k + entry.x;
-          if (next.indices[index] === entry.color || entry.submittedAt && Date.now() - entry.submittedAt > 120000) {
-            this.stagedPixels.delete(pixelKey);
-          } else {
-            next.indices[index] = entry.color;
-          }
-        }
         const old = this.mapsCache.get(key);
         if (!old?.indices || old.indices.length !== next.indices.length || next.indices.some((color, index) => color !== old.indices[index])) {
           this.mapsCache.set(key, next);
@@ -8199,6 +8261,14 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
       }
     });
     for (const key of this.mapsCache.keys()) if (!required.has(key)) this.mapsCache.delete(key);
+    // Server tiles remain authoritative. Pending selections live in a separate map.
+    const connection=await macrosharkConnectPending(this);
+    const snapshot=connection?await connection.call('snapshot'):null;
+    this.pendingQueueVerified=!!snapshot?.ok;
+    this.stagedPixels.clear();
+    if(snapshot?.ok)for(const entry of snapshot.points)this.stagedPixels.set(entry.tile+'/'+entry.x+'/'+entry.y,entry);
+    for(const key of previousPendingTiles)changed.add(key);
+    for(const entry of this.stagedPixels.values())changed.add(entry.tile);
     this.changedTiles = changed;
   }
   waitForUnfocus() {
@@ -8277,13 +8347,29 @@ d .icon-lock-closed{display:inline-block}\n", (document.head || document.documen
     throw new Error(this.pauseReason);
   }
   async openColors() {
-    if (this.isPaletteOpen()) return;
-    this.lastColor = void 0, document.querySelector(".flex.gap-2.px-3 > .btn-circle")?.click(), await Q(1), (this._widget?.findNativePaintButton() || document.querySelector(".btn.btn-primary.btn-lg.relative.z-30"))?.click(), await Q(1);
-    let o = document.querySelector("button.bottom-0");
-    if (o?.innerHTML === "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 -960 960 960\" fill=\"currentColor\" class=\"size-5\"><\
-path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 180-180 180 180-58 58-122-122-12\
-2 122Z\"></path></svg><!---->") o.click(), await Q(1);
-  }
+      if (this.isPaletteOpen()) return;
+      this.openingPalette = true;
+      this.lastColor = undefined;
+      try {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          this.assertAutomationReady();
+          // Expanding a collapsed palette must not submit its pending pixels.
+          const expand = document.querySelector('button.paint-mini-expand');
+          const visible = node => node && node.getBoundingClientRect().width > 0 && getComputedStyle(node).visibility !== 'hidden';
+          if (visible(expand)) expand.click();
+          else {
+            const paint = this.widget.findNativePaintButton();
+            if (visible(paint) && !paint.closest('.paint-panel-shell')) paint.click();
+          }
+          for (let wait = 0; wait < 12; wait++) {
+            if (this.isPaletteOpen()) return;
+            this.assertAutomationReady();
+            await Q(50);
+          }
+        }
+        throw new Error('No se pudo abrir la barra de colores. Ábrela y vuelve a intentarlo.');
+      } finally { this.openingPalette = false; }
+    }
   async drawTask(o) {
     if (!o) return false;
     let prepared = false;
@@ -8291,9 +8377,13 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
       this.assertAutomationReady();
       this.assertPaletteOpen();
       if (this.unavailableColors?.has(o.color)) return false;
+
       // Recheck at dispatch time: other overlays may have queued this same pixel.
       const current = this.mapsCache.get(o.position.tileX + '/' + o.position.tileY)?.pixels[o.position.y]?.[o.position.x];
-      if (current === o.color) {
+      const connection=this.pendingConnection;
+      const queued=connection?await connection.call('point',{tx:o.position.tileX,ty:o.position.tileY,x:o.position.x,y:o.position.y}):null;
+      const effective=queued?.ok?(queued.point?.color??current):(this.stagedPixels.get([o.position.tileX,o.position.tileY,o.position.x,o.position.y].join('/'))?.color??current);
+      if (effective === o.color) {
         prepared = true;
         return false;
       }
@@ -8337,6 +8427,7 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
         bubbles: true,
         cancelable: true
       };
+      const beforeCount=connection?null:macrosharkPendingCount();
       const press = new KeyboardEvent('keydown', keyboard);
       try {
         document.documentElement.dispatchEvent(press);
@@ -8346,7 +8437,10 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
       // The painting handler prevents Space's default action. If it is not
       // ready, do not count this pixel or mark it as drawn in the local cache.
       if (!press.defaultPrevented) return false;
-      o.position.setMapColor(o.color);
+      await Q(0);
+      const accepted=connection?await connection.call('point',{tx:o.position.tileX,ty:o.position.tileY,x:o.position.x,y:o.position.y}):null;
+      const afterCount=connection?null:macrosharkPendingCount();
+      if(connection?(!accepted?.ok||accepted.point?.color!==o.color):(beforeCount===null||afterCount!==beforeCount+1))return false;
       this.stagedPixels.set([o.position.tileX, o.position.tileY, o.position.x, o.position.y].join('/'), { tile: o.position.tileX + '/' + o.position.tileY, x: o.position.x, y: o.position.y, color: o.color, submittedAt: 0 });
       prepared = true;
       return true;
@@ -8376,36 +8470,44 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
         w = p + Math.random() * (d - p);
       await this.drawTask({
         color: l,
-        position: J.fromScreenPosition(this, {
+        position: SharkMapPosition.fromScreenPosition(this, {
           x: t,
           y: w
         })
-      }), void 0;
+      });
     } catch (o) {
-      this.log("Auto farm tick failed", o), void 0;
+      this.log("Auto farm tick failed", o);
     }
   }
-  async drawOverlayPixelsBatch(o) {
-    if (!this.ensureFeatureAccess("autoDraw")) return 0;
-    const paintImage = this.widget.getPaintImage();
-    if (!paintImage) { this.widget.showPaintSelectionPrompt(); return 0; }
-    let a = Math.max(1, Math.floor(o)),
-      l = 0;
-    return await this.widget.run(f("taskDrawingOverlayPixels"), async () => {
-      await this.widget.run(f("taskInitializingDraw"), async () => {
+  async drawOverlayPixelsBatch(count) {
+      const image=this.widget.getPaintImage();
+      if(!image){this.widget.showPaintSelectionPrompt();return 0;}
+      let prepared=0;
+      return this.widget.run(f('taskDrawingOverlayPixels'),async()=>{
+        this.assertAutomationReady();
+        await this.openColors();
         await this.updateColors();
+
         await this.readMap();
-      }), this.updateTasks();
-      a = this.widget.selectedPixelLimit(this.widget.availablePixels, a, this.widget.autoOverlayConfig?.usePixelRange ? false : this.widget.randomQuantity);
-      while (l < a) {
-        let r = this.takeNextTaskFromStrategy();
-        if (!r) break;
-        if (await this.drawTask(r)) l++;
-        await Q(this.widget.pixelPreparationDelay());
-      }
-      this.widget.update();
-    }), l;
-  }
+        this.updateTasks();
+        this.assertPaletteOpen();
+        const reserved=[...this.stagedPixels.values()].filter(entry=>!entry.submittedAt).length;
+        const available=Math.max(0,Math.floor(this.me?.charges?.count ?? 0)-reserved);
+        const limit=Math.min(available,Math.max(0,Math.floor(count)));
+        this.drawingPixels=true;
+        try {
+          while(prepared<limit) {
+            this.assertAutomationReady();
+            const task=this.takeNextTaskFromStrategy();
+            if(!task)break;
+            if(await this.drawTask(task))prepared++;
+            await Q(this.widget.pixelPreparationDelay());
+          }
+          this.widget.update();
+          return prepared;
+        } finally { this.drawingPixels=false; }
+      });
+    }
   takeNextTaskFromStrategy() {
     const selected = this._widget?.getPaintImage();
     if (!selected) return;
@@ -8446,21 +8548,20 @@ path d=\"M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 18
         if (this.isWplacePaintRequest(c)) this.emitPaintResponseEvent(c, g);
         if (g.url === "https://backend.wplace.live/me") this.me = await p.json(), (this.me.favoriteLocations ??= []).unshift(...O), this.me.maxFavoriteLocations = 1 / 0, g.json = () => Promise.resolve(this.me), this.log("Patched /me response with favorite locations", {
           totalFavorites: this.me.favoriteLocations.length
-        }), this.syncAccountInfoWithControl("wplace_me").catch(t => {
-          this.log("Control API /me sync failed", t);
         }), void 0;
         let d = l.exec(c);
         if (d) {
-          let t = new J(this, +d[1], +d[2], +d[3], +d[4]);
+          let t = new SharkMapPosition(this, +d[1], +d[2], +d[3], +d[4]);
           for (let w = 0; w < this.markerPixelPositionResolvers.length; w++) this.markerPixelPositionResolvers[w](t);
-          this.markerPixelPositionResolvers.length = 0, this.log("Resolved marker pixel position from network event"), void 0;
+          this.markerPixelPositionResolvers.length = 0;
+          this.log("Resolved marker pixel position from network event");
         }
         return g;
       };
     o.fetch = i, globalThis.fetch = i;
   }
   emitPaintResponseEvent(o, a) {
-    if (a.ok) for (const entry of this.stagedPixels.values()) if (!entry.submittedAt) entry.submittedAt = Date.now();
+    // An HTTP response alone does not prove that any individual pixel changed.
     globalThis.dispatchEvent(new CustomEvent("macroshark:paint-response", {
       detail: {
         ok: a.ok,
@@ -8535,6 +8636,7 @@ path d=\"m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 
     });
   }
   startMobileMapTracking() {
+    this.installMapKeyboard();
     if (this.mobileTrackingInstalled) return;
     this.mobileTrackingInstalled = true;
     let frame = 0,
@@ -8736,6 +8838,7 @@ path d=\"m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 
     const entries = [];
     this.referenceSourceIds ??= new WeakMap();
     for (const image of this.images) {
+      if(image.isDeferred)continue;
       try {
         if (!this.referenceSourceIds.has(image.pixels.indices)) this.referenceSourceIds.set(image.pixels.indices, this.referenceSourceSerial = (this.referenceSourceSerial || 0) + 1);
         const p = image.position.toScreenPosition(),
@@ -8893,6 +8996,63 @@ path d=\"m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 
     this.requestChain = result.catch(() => {});
     return result;
   }
+
+  installMapKeyboard() {
+    if(this.mapKeyboard)return;
+    const state={keys:[],timer:0,running:false,version:0,cursor:null};this.mapKeyboard=state;
+    const directions={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}};
+    const stop=()=>{state.keys=[];state.version++;clearTimeout(state.timer);state.timer=0;};
+    const inControl=target=>{
+      if(target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[role="menu"],.wwidget,.macroshark-modal,.macroshark-guide,.macroshark-capture-panel'))return true;
+      return !!target?.closest?.('[role="dialog"]')&&!target.closest('.paint-panel-shell');
+    };
+    const blocked=()=>document.hidden||this.widget.open||this.widget.$capturePanel||[...document.querySelectorAll('dialog[open],[role="dialog"][aria-modal="true"]')].some(panel=>!panel.matches('.paint-panel-shell')&&panel.getBoundingClientRect().width>0)||this.drawingPixels||this.widget.drawActionRunning||this.widget.autoOverlayIntervalId||this.widget.isChallengeBlockingPaint();
+    const tick=async()=>{
+      if(state.running||!state.keys.length)return;
+      if(blocked()||inControl(document.activeElement)){stop();return;}
+      const direction=directions[state.keys[state.keys.length-1]],version=state.version;state.running=true;
+      try {
+        const connection=await macrosharkConnectMap(this);
+        if(version!==state.version||blocked()||!state.keys.length)return;
+        const pixels=this.isPaletteOpen();
+        let moved=false;
+        if(connection){const result=await connection.call('pan',{...direction,pixels});moved=!!result?.ok;}
+        if(!moved){
+          const p=this.getMapProjection();
+          if(!p||!Number.isFinite(p.scale)||p.scale<=0){stop();this.widget.showNativeNotice('No se pudo mover el mapa. Recarga WPlace.');return;}
+          const step=pixels?p.scale:40;
+          moved=await this.moveMap({x:direction.x*step,y:direction.y*step});
+        }
+        if(moved){
+          await new Promise(resolve=>requestAnimationFrame(resolve));
+          this.updateStars();this.updateImages();
+          const r=document.querySelector('.maplibregl-canvas')?.getBoundingClientRect(),cursor=state.cursor;
+          if(r){
+            const point=cursor&&cursor.x>=r.left&&cursor.x<r.right&&cursor.y>=r.top&&cursor.y<r.bottom?cursor:{x:r.left+r.width*.5,y:r.top+r.height*.5};
+            // Refresh the native hover; only WPlace decides whether Space paints.
+            const hover=sharkExactMouseMove(point.x,point.y);Object.defineProperty(hover,'shiftKey',{value:false});
+            document.documentElement.dispatchEvent(hover);
+          }
+        }
+      } catch(error){stop();this.widget.showNativeNotice('Movimiento detenido: '+error.message);}
+      finally{state.running=false;if(state.keys.length&&!blocked())state.timer=setTimeout(tick,60);}
+    };
+    const down=event=>{
+      if(!directions[event.code]||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey||event.isComposing||inControl(event.target)||blocked())return;
+      event.preventDefault();event.stopImmediatePropagation();
+      if(event.repeat||state.keys.includes(event.code))return;
+      state.keys.push(event.code);state.version++;
+      if(!state.running){clearTimeout(state.timer);state.timer=0;void tick();}
+    };
+    const up=event=>{if(!directions[event.code])return;state.keys=state.keys.filter(key=>key!==event.code);state.version++;if(!state.keys.length){clearTimeout(state.timer);state.timer=0;}};
+    const move=event=>{if(event.isTrusted&&event.target?.closest?.('.maplibregl-canvas'))state.cursor={x:event.clientX,y:event.clientY};};
+    const blur=()=>stop(),visibility=()=>{if(document.hidden)stop();},focus=event=>{if(inControl(event.target))stop();};
+    window.addEventListener('keydown',down,true);window.addEventListener('keyup',up,true);window.addEventListener('mousemove',move,true);
+    window.addEventListener('blur',blur);window.addEventListener('pagehide',blur);window.addEventListener('pointercancel',blur);
+    document.addEventListener('visibilitychange',visibility);document.addEventListener('focusin',focus);
+    this.widget.runOnDestroy.push(()=>{stop();window.removeEventListener('keydown',down,true);window.removeEventListener('keyup',up,true);window.removeEventListener('mousemove',move,true);window.removeEventListener('blur',blur);window.removeEventListener('pagehide',blur);window.removeEventListener('pointercancel',blur);document.removeEventListener('visibilitychange',visibility);document.removeEventListener('focusin',focus);});
+    void macrosharkConnectMap(this).catch(()=>{});
+  }
 }
 function macrosharkStartupError(error) {
   console.error('[MacroShark Plus] No se pudo abrir el panel', error);
@@ -8909,9 +9069,13 @@ function macrosharkStartupError(error) {
   };
   if (document.body) show();else document.addEventListener('DOMContentLoaded', show, { once: true });
 }
+
+
+
+
 const MACROSHARK_RELEASE_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/latest.json';
 const MACROSHARK_INSTALL_URL = 'https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/MacroShark.user.js';
-const MACROSHARK_CURRENT_VERSION = 'Plus.35';
+const MACROSHARK_CURRENT_VERSION = 'Plus.36';
 
 function macrosharkVersionNumber(value) {
   const match = /^Plus\.(\d+)$/.exec(value);
@@ -9018,10 +9182,10 @@ try {
     const shared = globalThis.unsafeWindow ?? globalThis;
     if (!shared.__macrosharkBooting && !root?.hasAttribute('data-macroshark-active') && !document.querySelector('.wwidget')) {
       shared.__macrosharkBooting = true;
-      if (root) root.setAttribute('data-macroshark-active', 'Plus.35');
-      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.35'), { once: true });
+      if (root) root.setAttribute('data-macroshark-active', 'Plus.36');
+      else document.addEventListener('DOMContentLoaded', () => document.documentElement?.setAttribute('data-macroshark-active', 'Plus.36'), { once: true });
       ll();
-      globalThis.macroshark = new ba();
+      globalThis.macroshark = new SharkBot();
       macrosharkStartUpdateChecks();
     }
   }
@@ -9068,7 +9232,7 @@ function macrosharkToWplace(canvas, name, position, opacity = 50, locked = false
     order: 0, locked: !!locked, hasPlaced: !!position, visible: true
   };
 }
-async function macrosharkReadNativeOverlays() {
+async function macrosharkReadNativeOverlays(knownRevisions = new Map()) {
   const raw = localStorage.getItem('template-overlays');
   const records = raw ? JSON.parse(raw) : [];
   if (!Array.isArray(records)) throw Error('La lista local de WPlace no tiene un formato válido.');
@@ -9089,6 +9253,7 @@ async function macrosharkReadNativeOverlays() {
     });
     const result = [];
     for (const record of local) {
+      if (knownRevisions.has(record.id) && knownRevisions.get(record.id) === (Number(record.updatedAt) || 0)) { result.push({...record, unchanged:true}); continue; }
       const data = await read(record.id);
       if (!data) continue;
       let url;
@@ -9107,8 +9272,319 @@ async function macrosharkReadNativeOverlays() {
         reader.readAsDataURL(new Blob([data]));
       });
       if (!url) continue;
-      result.push({ ...record, image: { dataUrl: macrosharkLocalImageUrl(url), width: record.originalWidth, height: record.originalHeight } });
+      result.push({ ...record, sourceSignature: await macrosharkImageSignature(data), image: { dataUrl: macrosharkLocalImageUrl(url), width: record.originalWidth, height: record.originalHeight } });
     }
     return result;
   } finally { db.close(); }
+}
+
+// Shared helpers: file export, theme refresh and native source metadata.
+async function macrosharkExportImage(image, format) {
+  if (!['wplace', 'png', 'jpg'].includes(format)) throw new Error('Formato no compatible.');
+  let blob;
+  if (format === 'wplace') {
+    const record = macrosharkToWplace(image.pixels.canvas, image.displayName || 'MacroShark', image.position, image.opacity, image.lock);
+    blob = new Blob([JSON.stringify(record, null, 2)], {type:'application/json'});
+  } else {
+    const source=image.pixels.canvas;
+    let canvas=source;
+    if(format==='jpg') {
+      canvas=document.createElement('canvas');canvas.width=source.width;canvas.height=source.height;
+      const context=canvas.getContext('2d');context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(source,0,0);
+    }
+    blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('No se pudo crear la imagen.')),format==='jpg'?'image/jpeg':'image/png',.94));
+    if(canvas!==source)canvas.width=canvas.height=0;
+  }
+  const name=(image.displayName||'MacroShark').replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_').replace(/\.(?:wplace|png|jpe?g)$/i,'').slice(0,120)+'.'+format;
+  const file=typeof File==='function'?new File([blob],name,{type:blob.type}):null;
+  if(file&&navigator.canShare?.({files:[file]})&&navigator.share) {
+    try { await navigator.share({files:[file],title:name}); return; }
+    catch(error) { if(error.name==='AbortError')return; }
+  }
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+
+function macrosharkObserveTheme(widget) {
+  let queued=false;
+  const observer=new MutationObserver(()=>{
+    if(queued)return;queued=true;
+    requestAnimationFrame(()=>{
+      queued=false;
+      for(const image of widget.bot.images)if(image.$previewDialog.open)image.renderStrategyPreviewSamples();
+      widget.positionLauncher();
+    });
+  });
+  observer.observe(document.documentElement,{attributes:true,attributeFilter:['class','style','data-theme','data-game-ui']});
+  widget.runOnDestroy.push(()=>observer.disconnect());
+}
+
+async function macrosharkImageSignature(data) {
+  // A location/settings change should not repeat palette analysis of the same image.
+  if(!globalThis.crypto?.subtle)return '';
+  try {
+    const bytes=data instanceof Blob?await data.arrayBuffer():data instanceof ArrayBuffer||ArrayBuffer.isView(data)?data:new globalThis.TextEncoder().encode(typeof data==='string'?data:data?.dataUrl||'');
+    const digest=await globalThis.crypto.subtle.digest('SHA-256',bytes);
+    return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');
+  } catch {return '';}
+}
+
+// Connect to the map already created by WPlace, in the page's own module realm.
+function macrosharkMapImports(source, nodeUrl) {
+  const aliases=new Set([...source.matchAll(/([\w$]+)\.map\s*=\s*[\w$]+/g)].map(match=>match[1]));
+  const result=[];
+  for(const match of source.matchAll(/import\s*\{([^}]+)\}\s*from\s*["']([^"']+)["']/g)) {
+    for(const item of match[1].split(',')) {
+      const names=item.trim().split(/\s+as\s+/);
+      if(!aliases.has(names[1]||names[0]))continue;
+      const url=new URL(match[2],nodeUrl);
+      if(url.origin===location.origin&&url.pathname.startsWith('/_app/immutable/chunks/'))result.push({url:url.href,name:names[0]});
+    }
+  }
+  return result;
+}
+
+async function macrosharkMapCandidates() {
+  const entries=globalThis.performance.getEntriesByType('resource');
+  const urls=[...new Set(entries.map(entry=>entry.name).filter(name=>{
+    try {const url=new URL(name);return url.origin===location.origin&&/^\/_app\/immutable\/nodes\/\d+\.[^/]+\.js$/.test(url.pathname);}catch{return false;}
+  }))].reverse().slice(0,8);
+  const result=[];
+  for(const url of urls) {
+    try {
+      const response=await fetch(url,{cache:'force-cache',credentials:'omit',signal:AbortSignal.timeout(2500)});
+      if(response.ok)result.push(...macrosharkMapImports(await response.text(),url));
+      if(result.length)break;
+    } catch {}
+  }
+  return result;
+}
+
+// This function is serialized into a module script; it must close over nothing.
+async function macrosharkNativeMapRuntime(config) {
+  const request='macroshark:map-request:'+config.id,response='macroshark:map-response:'+config.id;
+  const holders=[];
+  for(const candidate of config.candidates) {
+    try {const module=await import(candidate.url);if(module[candidate.name])holders.push(module[candidate.name]);}catch{}
+  }
+  const getMap=()=>{
+    for(const holder of holders) {
+      const map=holder?.map;
+      if(map&&typeof map.jumpTo==='function'&&typeof map.panBy==='function'&&map.getCanvas?.()===document.querySelector('.maplibregl-canvas'))return map;
+    }
+    return null;
+  };
+  const reply=value=>window.dispatchEvent(new CustomEvent(response,{detail:JSON.stringify(value)}));
+  const started=Date.now();
+  while(holders.length&&!getMap()&&Date.now()-started<1000)await new Promise(resolve=>setTimeout(resolve,40));
+  if(!getMap()){reply({seq:0,ok:false});return;}
+  const receive=event=>{
+    let data;
+    try {
+      data=JSON.parse(event.detail);
+      if(data.type==='dispose'){window.removeEventListener(request,receive);return;}
+      const map=getMap();if(!map)throw new Error('Mapa no disponible.');
+      if(data.type==='focus') {
+        const x=Number(data.x),y=Number(data.y);
+        if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||x>2048000||y<0||y>2048000)throw new Error('Coordenadas no válidas.');
+        map.stop();
+        map.jumpTo({center:[x/2048000*360-180,Math.atan(Math.sinh(Math.PI*(1-2*y/2048000)))*180/Math.PI]});
+      } else if(data.type==='pan') {
+        const x=Number(data.x),y=Number(data.y);
+        if(!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>1||Math.abs(y)>1)throw new Error('Dirección no válida.');
+        const scale=512*2**map.getZoom()/2048000;
+        const step=data.pixels?scale:40;
+        map.stop();map.panBy([x*step,y*step],{duration:0,animate:false});
+      } else if(data.type!=='info')throw new Error('Operación no válida.');
+      reply({seq:data.seq,ok:true,zoom:map.getZoom()});
+    } catch(error){reply({seq:data?.seq,ok:false,error:error.message});}
+  };
+  window.addEventListener(request,receive);
+  reply({seq:0,ok:true});
+}
+
+async function macrosharkConnectMap(bot) {
+  if(bot.nativeMapConnection)return bot.nativeMapConnection;
+  if(bot.nativeMapLoading)return bot.nativeMapLoading;
+  if(Date.now()<(bot.nativeMapRetryAt||0))return null;
+  bot.nativeMapLoading=(async()=>{
+    const candidates=await macrosharkMapCandidates();
+    if(!candidates.length)return null;
+    const id=globalThis.crypto.randomUUID(),eventName='macroshark:map-response:'+id;
+    const pending=new Map();let serial=0;
+    const receive=event=>{
+      try {const data=JSON.parse(event.detail),entry=pending.get(data.seq);if(entry){clearTimeout(entry.timer);pending.delete(data.seq);entry.resolve(data);}}catch{}
+    };
+    window.addEventListener(eventName,receive);
+    const wait=seq=>new Promise(resolve=>{
+      const timer=setTimeout(()=>{pending.delete(seq);resolve(null);},1500);
+      pending.set(seq,{resolve,timer});
+    });
+    const ready=wait(0),script=document.createElement('script');script.type='module';
+    script.textContent='('+macrosharkNativeMapRuntime.toString()+')('+JSON.stringify({id,candidates})+');';
+    const nonce=document.querySelector('script[nonce]')?.nonce;if(nonce)script.nonce=nonce;
+    (document.head||document.documentElement).append(script);
+    const result=await ready;script.remove();
+    if(!result?.ok){window.removeEventListener(eventName,receive);return null;}
+    const connection={
+      async call(type,data={}) {
+        const seq=++serial,reply=wait(seq);
+        window.dispatchEvent(new CustomEvent('macroshark:map-request:'+id,{detail:JSON.stringify({...data,type,seq})}));
+        return reply;
+      },
+      close(){window.dispatchEvent(new CustomEvent('macroshark:map-request:'+id,{detail:JSON.stringify({type:'dispose'})}));window.removeEventListener(eventName,receive);for(const entry of pending.values()){clearTimeout(entry.timer);entry.resolve(null);}pending.clear();}
+    };
+    bot._widget?.runOnDestroy.push(()=>connection.close());
+    return bot.nativeMapConnection=connection;
+  })();
+  try {return await bot.nativeMapLoading;}
+  finally {bot.nativeMapLoading=null;if(!bot.nativeMapConnection)bot.nativeMapRetryAt=Date.now()+5000;}
+}
+
+function macrosharkFormatCoordinates(point) {
+  const x=point.globalX??point.x,y=point.globalY??point.y;
+  return [Math.floor(x/1000),Math.floor(y/1000),x%1000,y%1000].join(', ');
+}
+function macrosharkParseCoordinates(text) {
+  if(!/^\s*\d+\s*[,; ]\s*\d+\s*[,; ]\s*\d+\s*[,; ]\s*\d+\s*$/.test(text))throw new Error('Introduce cuatro números separados por comas.');
+  const values=text.match(/\d+/g).map(Number),[tx,ty,x,y]=values;
+  if(!values.every(Number.isSafeInteger)||tx>2047||ty>2047||x>999||y>999)throw new Error('Coordenadas fuera del mapa.');
+  return {x:tx*1000+x,y:ty*1000+y};
+}
+function macrosharkInstallImageCoordinates(widget,card,image) {
+  const panel=document.createElement('div');panel.className='shark-image-coordinates';
+  panel.innerHTML='<label>A · Esquina superior izquierda<input class="shark-coordinate-a" aria-label="Coordenadas A" inputmode="text" spellcheck="false"></label><label>B · Esquina inferior derecha<input class="shark-coordinate-b" aria-label="Coordenadas B" inputmode="text" spellcheck="false"></label>';
+  card.querySelector('.image-progress').after(panel);
+  const a=panel.querySelector('.shark-coordinate-a'),b=panel.querySelector('.shark-coordinate-b');
+  const busy=()=>widget.drawActionRunning||widget.autoOverlayIntervalId||widget.autoOverlayTickRunning;
+  const sync=()=>{
+    if(document.activeElement!==a)a.value=macrosharkFormatCoordinates(image.position);
+    if(document.activeElement!==b)b.value=macrosharkFormatCoordinates({x:image.position.globalX+image.pixels.width-1,y:image.position.globalY+image.pixels.height-1});
+    a.disabled=b.disabled=!!busy();
+  };
+  card.sharkSyncCoordinates=sync;
+  const save=(input,isB)=>{
+    if(busy()){sync();return;}
+    try{
+      const point=macrosharkParseCoordinates(input.value),x=point.x-(isB?image.pixels.width-1:0),y=point.y-(isB?image.pixels.height-1:0);
+      if(x<0||y<0||x+image.pixels.width>2048000||y+image.pixels.height>2048000)throw new Error('La imagen quedaría fuera del mapa.');
+      image.position.globalX=x;image.position.globalY=y;image.updateTasks();widget.bot.updateTasks();H(widget.bot,true);
+      input.blur();sync();
+    }catch(error){input.setCustomValidity(error.message);input.reportValidity();}
+  };
+  for(const [input,isB] of [[a,false],[b,true]]){
+    input.addEventListener('input',()=>input.setCustomValidity(''));
+    input.addEventListener('change',()=>save(input,isB));
+    input.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Enter'){event.preventDefault();save(input,isB);}if(event.key==='Escape'){event.preventDefault();input.blur();sync();}});
+  }
+  sync();
+}
+
+// Observe WPlace's existing preview queue. Never call its setter or mutate it.
+function macrosharkPendingExport(source, url) {
+  if (!source.includes('Pending paint preview listener failed.')) return null;
+  const match = /function\s+([\w$]+)\s*\(\s*([\w$]+)\s*\)\s*\{\s*return\s+([\w$]+)\.add\(\s*\2\s*\),[\w$]+\(\s*\2\s*,\s*[\w$]+\s*\),\s*\(\s*\)\s*=>\s*\3\.delete\(\s*\2\s*\)\s*\}/.exec(source);
+  if (!match) return null;
+  for (const exported of source.matchAll(/export\s*\{([^}]+)\}/g)) {
+    for (const item of exported[1].split(',')) {
+      const names = item.trim().split(/\s+as\s+/);
+      if (names[0] === match[1]) return {url, name:names[1] || names[0]};
+    }
+  }
+  return null;
+}
+
+async function macrosharkPendingCandidate() {
+  const urls = [...new Set(globalThis.performance.getEntriesByType('resource').filter(entry => {
+    try {
+      const url = new URL(entry.name);
+      return url.origin === location.origin && /^\/_app\/immutable\/chunks\/[^/]+\.js$/.test(url.pathname) && (!entry.decodedBodySize || entry.decodedBodySize >= 1000 && entry.decodedBodySize <= 12000);
+    } catch { return false; }
+  }).map(entry => entry.name))].reverse().slice(0,48);
+  let cursor = 0, found = null;
+  await Promise.all(Array.from({length:6}, async () => {
+    while (!found && cursor < urls.length) {
+      const url = urls[cursor++];
+      try {
+        const response = await fetch(url, {cache:'force-cache', credentials:'omit', signal:AbortSignal.timeout(1000)});
+        if (response.ok) found = macrosharkPendingExport(await response.text(), url) || found;
+      } catch {}
+    }
+  }));
+  return found;
+}
+
+// Runs in the same module realm as WPlace, receiving only read requests.
+async function macrosharkPendingRuntime(config) {
+  const request = 'macroshark:pending-request:' + config.id;
+  const response = 'macroshark:pending-response:' + config.id;
+  const reply = data => window.dispatchEvent(new CustomEvent(response, {detail:JSON.stringify(data)}));
+  let points = [], unsubscribe;
+  const valid = p => Array.isArray(p?.tile) && Array.isArray(p?.pixel) && [...p.tile,...p.pixel,p.colorIdx].every(Number.isInteger) && p.tile.every(n=>n>=0&&n<2048) && p.pixel.every(n=>n>=0&&n<1000) && p.colorIdx>=0 && p.colorIdx<256;
+  const record = p => ({tile:p.tile.join('/'),x:p.pixel[0],y:p.pixel[1],color:p.colorIdx,submittedAt:0});
+  try {
+    const url = new URL(config.candidate.url);
+    if (url.origin !== location.origin || !/^\/_app\/immutable\/chunks\/[^/]+\.js$/.test(url.pathname)) throw new Error('Módulo no válido.');
+    const module = await import(url.href), subscribe = module[config.candidate.name];
+    if (typeof subscribe !== 'function') throw new Error('Cola no disponible.');
+    unsubscribe = subscribe(value => { if (Array.isArray(value)) points = value; });
+    if (typeof unsubscribe !== 'function') throw new Error('Suscripción no disponible.');
+    const receive = event => {
+      let data;
+      try {
+        data = JSON.parse(event.detail);
+        if (data.type === 'dispose') { unsubscribe(); window.removeEventListener(request,receive); return; }
+        if (data.type === 'snapshot') reply({seq:data.seq,ok:true,points:points.filter(valid).map(record)});
+        else if (data.type === 'point') {
+          let point = null;
+          // The most recently prepared point is normally last: no full queue copy per pixel.
+          for (let i=points.length-1;i>=0;i--) {
+            const p=points[i];
+            if (p?.tile?.[0]===data.tx && p.tile[1]===data.ty && p.pixel?.[0]===data.x && p.pixel[1]===data.y && valid(p)) {point=record(p);break;}
+          }
+          reply({seq:data.seq,ok:true,point});
+        } else reply({seq:data.seq,ok:false});
+      } catch { reply({seq:data?.seq,ok:false}); }
+    };
+    window.addEventListener(request,receive);
+    reply({seq:0,ok:true});
+  } catch { unsubscribe?.(); reply({seq:0,ok:false}); }
+}
+
+async function macrosharkConnectPending(bot) {
+  if (bot.pendingConnection) return bot.pendingConnection;
+  if (bot.pendingLoading) return bot.pendingLoading;
+  if (Date.now() < (bot.pendingRetryAt || 0)) return null;
+  bot.pendingLoading = (async () => {
+    const candidate = await macrosharkPendingCandidate();
+    if (!candidate) return null;
+    const id=globalThis.crypto.randomUUID(), pending=new Map();let serial=0;
+    const response='macroshark:pending-response:'+id,request='macroshark:pending-request:'+id;
+    const receive=event=>{try{const data=JSON.parse(event.detail),entry=pending.get(data.seq);if(entry){clearTimeout(entry.timer);pending.delete(data.seq);entry.resolve(data);}}catch{}};
+    window.addEventListener(response,receive);
+    const wait=seq=>new Promise(resolve=>{const timer=setTimeout(()=>{pending.delete(seq);resolve(null);},1500);pending.set(seq,{resolve,timer});});
+    const ready=wait(0),script=document.createElement('script');script.type='module';
+    script.textContent='('+macrosharkPendingRuntime.toString()+')('+JSON.stringify({id,candidate})+');';
+    const nonce=document.querySelector('script[nonce]')?.nonce;if(nonce)script.nonce=nonce;
+    (document.head||document.documentElement).append(script);
+    const result=await ready;script.remove();
+    if(!result?.ok){window.dispatchEvent(new CustomEvent(request,{detail:JSON.stringify({type:'dispose'})}));window.removeEventListener(response,receive);return null;}
+    const connection={
+      call(type,data={}){const seq=++serial,result=wait(seq);window.dispatchEvent(new CustomEvent(request,{detail:JSON.stringify({...data,type,seq})}));return result;},
+      close(){window.dispatchEvent(new CustomEvent(request,{detail:JSON.stringify({type:'dispose'})}));window.removeEventListener(response,receive);for(const entry of pending.values()){clearTimeout(entry.timer);entry.resolve(null);}pending.clear();}
+    };
+    bot.widget.runOnDestroy.push(()=>connection.close());
+    return bot.pendingConnection=connection;
+  })();
+  try {return await bot.pendingLoading;}
+  finally {bot.pendingLoading=null;if(!bot.pendingConnection)bot.pendingRetryAt=Date.now()+30000;}
+}
+
+function macrosharkPendingCount() {
+  for(const element of document.querySelectorAll('.paint-panel-shell h3,.paint-panel-shell [data-ui-title],h3')) {
+    const match=/^(?:Pintar p[ií]xel|Paint pixel)\s*\((\d+)\)$/i.exec(element.textContent?.trim()||'');
+    if(match && element.getBoundingClientRect().width>0 && !element.closest('[hidden]'))return Number(match[1]);
+  }
+  return null;
 }
