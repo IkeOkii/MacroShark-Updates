@@ -2,7 +2,7 @@
 
 Asistente independiente de coordenadas y capturas para WPlace en computadora y celular. Puedes utilizarlo por sí solo o junto a MacroShark.
 
-**[Instalar Explorador](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/AsistenteOki.user.js)**
+**[Instalar AsistenteOki](https://raw.githubusercontent.com/IkeOkii/MacroShark-Updates/main/AsistenteOki.user.js)**
 
 En Tampermonkey, abre el enlace de instalación o importa el archivo `.user.js`. En Stay, utiliza **Importar desde enlace**. Activa el script y recarga WPlace. Si instalaste la copia **MacroShark Explorador · Prueba**, desactívala antes de activar esta publicación para mantener una sola copia del asistente.
 
@@ -12,7 +12,7 @@ En Tampermonkey, abre el enlace de instalación o importa el archivo `.user.js`.
 - Personaje arrastrable con burbuja que se acomoda al espacio disponible. Diálogos escritos locales.
 - **Identificar:** actívalo y toca un píxel para mostrar y copiar su ubicación. Arrastrar o ampliar con dos dedos permite navegar sin seleccionar.
 - **Buscar píxel:** escribe cuatro números separados por comas. Ejemplo: `1024, 1024, 200, 300`. También admite el texto completo de BlueMarble o dos coordenadas globales X, Y.
-- **Capturar:** elige A, esquina superior izquierda, y B, esquina inferior derecha, en el mapa o mediante sus coordenadas. Guarda la imagen en PNG/JPG o copia sus esquinas y tamaño para compartir la ubicación.
+- **Capturar:** elige A, esquina superior izquierda, y B, esquina inferior derecha, en el mapa o mediante sus coordenadas. Guarda la imagen en PNG/JPG o copia sus esquinas para compartir la ubicación. Al mostrar y copiar coordenadas aparecen únicamente cuatro números, sin letras ni posiciones adicionales; la copia de una captura contiene una línea por esquina.
 
 Las coordenadas Tile X/Y van de 0 a 2047 y Pixel X/Y de 0 a 999. Los dos números locales que muestra WPlace dentro de una región no bastan para identificar un punto único: usa las cuatro coordenadas completas o X, Y globales.
 
